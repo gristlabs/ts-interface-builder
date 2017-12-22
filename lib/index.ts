@@ -8,25 +8,132 @@ import * as ts from "typescript";
 // Default suffix appended to generated files. Abbreviation for "ts-interface".
 const defaultSuffix = "-ti";
 
-// TODO: Use a class-based interface, as well as replacing big if-else chain with swich.
+// The main public interface is `Compiler.compile`.
 export class Compiler {
   public static compile(filePath: string): string {
     const options = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
     const program = ts.createProgram([filePath], options);
     const checker = program.getTypeChecker();
-    return new Compiler(checker).compileNode(program.getSourceFile(filePath));
+    const topNode = program.getSourceFile(filePath);
+    if (!topNode) {
+      throw new Error(`Can't process ${filePath}: ${collectDiagnostics(program)}`);
+    }
+    return new Compiler(checker).compileNode(topNode);
   }
 
-  constructor(private checker: ts.TypeChecker) {
-  }
-
-  private compileNode(node: ts.Node): string {
-    return this.getName(node);
-  }
+  constructor(private checker: ts.TypeChecker) {}
 
   private getName(id: ts.Node): string {
     const symbol = this.checker.getSymbolAtLocation(id);
     return symbol ? symbol.getName() : "unknown";
+  }
+
+  private indent(content: string): string {
+    return content.replace(/\n/g, "\n  ");
+  }
+
+  private compileNode(node: ts.Node): string {
+    switch (node.kind) {
+      case ts.SyntaxKind.Identifier: return this._compileIdentifier(node as ts.Identifier);
+      case ts.SyntaxKind.Parameter: return this._compileParameterDeclaration(node as ts.ParameterDeclaration);
+      case ts.SyntaxKind.PropertySignature: return this._compilePropertySignature(node as ts.PropertySignature);
+      case ts.SyntaxKind.MethodSignature: return this._compileMethodSignature(node as ts.MethodSignature);
+      case ts.SyntaxKind.TypeReference: return this._compileTypeReferenceNode(node as ts.TypeReferenceNode);
+      case ts.SyntaxKind.FunctionType: return this._compileFunctionTypeNode(node as ts.FunctionTypeNode);
+      case ts.SyntaxKind.TypeLiteral: return this._compileTypeLiteralNode(node as ts.TypeLiteralNode);
+      case ts.SyntaxKind.ArrayType: return this._compileArrayTypeNode(node as ts.ArrayTypeNode);
+      case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
+      case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
+      case ts.SyntaxKind.InterfaceDeclaration:
+        return this._compileInterfaceDeclaration(node as ts.InterfaceDeclaration);
+      case ts.SyntaxKind.TypeAliasDeclaration:
+        return this._compileTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
+      case ts.SyntaxKind.ExpressionWithTypeArguments:
+        return this._compileExpressionWithTypeArguments(node as ts.ExpressionWithTypeArguments);
+      case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
+      case ts.SyntaxKind.AnyKeyword: return '"any"';
+      case ts.SyntaxKind.NumberKeyword: return '"number"';
+      case ts.SyntaxKind.ObjectKeyword: return '"object"';
+      case ts.SyntaxKind.BooleanKeyword: return '"boolean"';
+      case ts.SyntaxKind.StringKeyword: return '"string"';
+      case ts.SyntaxKind.SymbolKeyword: return '"symbol"';
+      case ts.SyntaxKind.ThisKeyword: return '"this"';
+      case ts.SyntaxKind.VoidKeyword: return '"void"';
+      case ts.SyntaxKind.UndefinedKeyword: return '"undefined"';
+      case ts.SyntaxKind.NullKeyword: return '"null"';
+      case ts.SyntaxKind.NeverKeyword: return '"never"';
+    }
+    // Skip top-level statements that we haven't handled.
+    if (ts.isSourceFile(node.parent!)) { return ""; }
+    throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
+      node.getText());
+  }
+
+  private _compileIdentifier(node: ts.Identifier): string {
+    const name = this.getName(node);
+    return `"${name}"`;
+  }
+  private _compileParameterDeclaration(node: ts.ParameterDeclaration): string {
+    const name = this.getName(node.name);
+    const isOpt = node.questionToken ? ", t.opt" : "";
+    return `t.param("${name}", ${this.compileNode(node.type!)}${isOpt})`;
+  }
+  private _compilePropertySignature(node: ts.PropertySignature): string {
+    const name = this.getName(node.name);
+    const isOpt = node.questionToken ? ", t.opt" : "";
+    return `t.prop("${name}", ${this.compileNode(node.type!)}${isOpt})`;
+  }
+  private _compileMethodSignature(node: ts.MethodSignature): string {
+    const name = this.getName(node.name);
+    const params = node.parameters.map(this.compileNode, this);
+    const items = [this.compileNode(node.type!)].concat(params);
+    return `t.prop("${name}", t.func(${items.join(", ")}))`;
+  }
+  private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
+    const name = this.getName(node.typeName);
+    return `"${name}"`;
+  }
+  private _compileFunctionTypeNode(node: ts.FunctionTypeNode): string {
+    const params = node.parameters.map(this.compileNode, this);
+    const items = [this.compileNode(node.type!)].concat(params);
+    return `t.func(${items.join(", ")})`;
+  }
+  private _compileTypeLiteralNode(node: ts.TypeLiteralNode): string {
+    const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
+    return `t.iface([], [\n${members.join("")}])`;
+  }
+  private _compileArrayTypeNode(node: ts.ArrayTypeNode): string {
+    return `t.array(${this.compileNode(node.elementType)})`;
+  }
+  private _compileTupleTypeNode(node: ts.TupleTypeNode): string {
+    const members = node.elementTypes.map(this.compileNode, this);
+    return `t.tuple(${members.join(", ")})`;
+  }
+  private _compileUnionTypeNode(node: ts.UnionTypeNode): string {
+    const members = node.types.map(this.compileNode, this);
+    return `t.union(${members.join(", ")})`;
+  }
+  private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
+    const name = this.getName(node.name);
+    const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
+    // typeParameters?: NodeArray<TypeParameterDeclaration>;
+    const extend: string[] = [];
+    if (node.heritageClauses) {
+      for (const h of node.heritageClauses) {
+        extend.push(...h.types.map(this.compileNode, this));
+      }
+    }
+    return `export const ${name} = t.iface([${extend.join(", ")}], [\n${members.join("")}]);`;
+  }
+  private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
+    const name = this.getName(node.name);
+    return `export const ${name} = ${this.compileNode(node.type)};`;
+  }
+  private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
+    return this.compileNode(node.expression);
+  }
+  private _compileSourceFile(node: ts.SourceFile): string {
+    return node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n";
   }
 }
 
@@ -37,98 +144,6 @@ function collectDiagnostics(program: ts.Program) {
     getCanonicalFileName(fileName: string) { return fileName; },
     getNewLine() { return "\n"; },
   });
-}
-
-export function compileToRuntime(filePath: string) {
-  const options = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
-  const program = ts.createProgram([filePath], options);
-  const checker = program.getTypeChecker();
-  const topNode: ts.Node = program.getSourceFile(filePath);
-  if (!topNode) {
-    throw new Error(`Can't process ${filePath}: ${collectDiagnostics(program)}`);
-  }
-  return processNode(topNode);
-
-  function getName(id: ts.Node): string {
-    const symbol = checker.getSymbolAtLocation(id);
-    return symbol ? symbol.getName() : "unknown";
-  }
-
-  function indent(content: string): string {
-    return content.replace(/\n/g, "\n  ");
-  }
-
-  function processNode(node: ts.Node): string {
-    if (ts.isSourceFile(node)) {
-      return node.statements.map(processNode).filter((s) => s).join("\n") + "\n";
-    } else if (ts.isInterfaceDeclaration(node)) {
-      const name = getName(node.name);
-      const members = node.members.map((n) => "  " + indent(processNode(n)) + ",\n").join("");
-      // typeParameters?: NodeArray<TypeParameterDeclaration>;
-      const extend: string[] = [];
-      if (node.heritageClauses) {
-        for (const h of node.heritageClauses) {
-          extend.push(...h.types.map(processNode));
-        }
-      }
-      return `export ${name} = t.iface([${extend.join(", ")}], {\n${members}});`;
-    } else if (ts.isTypeAliasDeclaration(node)) {
-      const name = getName(node.name);
-      return `export ${name} = ${processNode(node.type)};`;
-    } else if (ts.isPropertySignature(node)) {
-      const name = getName(node.name);
-      const question = node.questionToken ? "?" : "";
-      return `"${name}${question}": ${processNode(node.type!)}`;
-    } else if (ts.isIdentifier(node)) {
-      const name = getName(node);
-      return `"${name}"`;
-    } else if (ts.isTypeReferenceNode(node)) {
-      const name = getName(node.typeName);
-      return `"${name}"`;
-    } else if (ts.isArrayTypeNode(node)) {
-      return `t.array(${processNode(node.elementType)})`;
-    } else if (ts.isTupleTypeNode(node)) {
-      const members = node.elementTypes.map(processNode);
-      return `t.tuple(${members.join(", ")})`;
-    } else if (ts.isUnionTypeNode(node)) {
-      const members = node.types.map(processNode);
-      return `t.union(${members.join(", ")})`;
-    } else if (ts.isTypeLiteralNode(node)) {
-      const members = node.members.map((n) => "  " + indent(processNode(n)) + ",\n").join("");
-      return `t.iface([], {\n${members}})`;
-    } else if (ts.isParameter(node)) {
-      const name = getName(node.name);
-      const question = node.questionToken ? "?" : "";
-      return `{"${name}${question}": ${processNode(node.type!)}}`;
-    } else if (ts.isFunctionTypeNode(node)) {
-      const params = node.parameters.map(processNode).join(", ");
-      return `t.func([${params}], ${processNode(node.type!)})`;
-    } else if (ts.isMethodSignature(node)) {
-      const name = getName(node.name);
-      const params = node.parameters.map(processNode).join(", ");
-      return `"${name}": t.func([${params}], ${processNode(node.type!)})`;
-    } else if (ts.isSourceFile(node.parent!)) {
-      // Skip top-level statements that we haven't handled.
-      return "";
-    } else if (ts.isExpressionWithTypeArguments(node)) {
-      return processNode(node.expression);
-    } else {
-      switch (node.kind) {
-        case ts.SyntaxKind.AnyKeyword: return '"any"';
-        case ts.SyntaxKind.NumberKeyword: return '"number"';
-        case ts.SyntaxKind.ObjectKeyword: return '"object"';
-        case ts.SyntaxKind.BooleanKeyword: return '"boolean"';
-        case ts.SyntaxKind.StringKeyword: return '"string"';
-        case ts.SyntaxKind.SymbolKeyword: return '"symbol"';
-        case ts.SyntaxKind.ThisKeyword: return '"this"';
-        case ts.SyntaxKind.VoidKeyword: return '"void"';
-        case ts.SyntaxKind.UndefinedKeyword: return '"undefined"';
-        case ts.SyntaxKind.NullKeyword: return '"null"';
-        case ts.SyntaxKind.NeverKeyword: return '"never"';
-      }
-    }
-    throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported here`);
-  }
 }
 
 /**
@@ -153,7 +168,7 @@ export function main() {
     // const source = fs.readFileSync(filePath, {encoding: "utf8"});
     // const parsed = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, /*setParentNodes */ true);
 
-    const runtimeCode = compileToRuntime(filePath);
+    const runtimeCode = Compiler.compile(filePath);
     console.log("DESTINATION", outPath);
     console.log("RESULT", runtimeCode);
     fs.writeFileSync(outPath, runtimeCode);
