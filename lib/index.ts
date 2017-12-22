@@ -44,6 +44,7 @@ export class Compiler {
       case ts.SyntaxKind.ArrayType: return this._compileArrayTypeNode(node as ts.ArrayTypeNode);
       case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
+      case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
       case ts.SyntaxKind.InterfaceDeclaration:
         return this._compileInterfaceDeclaration(node as ts.InterfaceDeclaration);
       case ts.SyntaxKind.TypeAliasDeclaration:
@@ -113,6 +114,9 @@ export class Compiler {
     const members = node.types.map(this.compileNode, this);
     return `t.union(${members.join(", ")})`;
   }
+  private _compileLiteralTypeNode(node: ts.LiteralTypeNode): string {
+    return `t.lit(${node.getText()})`;
+  }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
     const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
@@ -154,27 +158,30 @@ export function main() {
   .description("Create runtime validator module from TypeScript interfaces")
   .usage("[options] <typescript-file...>")
   .option("-s, --suffix <suffix>", `Suffix to append to generated files (default ${defaultSuffix})`, defaultSuffix)
+  .option("-o, --outDir <path>", `Directory for output files; same as source file if omitted`)
   .option("-v, --verbose", "Produce verbose output")
   .parse(process.argv);
 
   const files: string[] = commander.args;
-  // const verbose: boolean = commander.verbose;
+  const verbose: boolean = commander.verbose;
   const suffix: string = commander.suffix;
+  const outDir: string|undefined = commander.outDir;
+
+  if (files.length === 0) {
+    commander.outputHelp();
+    process.exit(1);
+    return;
+  }
 
   for (const filePath of files) {
     // Read and parse the source file.
     const ext = path.extname(filePath);
-    const outPath = path.basename(filePath, ext) + suffix + ext;
-    // const source = fs.readFileSync(filePath, {encoding: "utf8"});
-    // const parsed = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, /*setParentNodes */ true);
-
-    const runtimeCode = Compiler.compile(filePath);
-    console.log("DESTINATION", outPath);
-    console.log("RESULT", runtimeCode);
-    fs.writeFileSync(outPath, runtimeCode);
-
-    // Process the file.
-    // processFile(sourceFile);
+    const dir = outDir || path.dirname(filePath);
+    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ext);
+    if (verbose) {
+      console.log(`Compiling ${filePath} -> ${outPath}`);
+    }
+    const generatedCode = Compiler.compile(filePath);
+    fs.writeFileSync(outPath, generatedCode);
   }
-  process.exit(0);
 }

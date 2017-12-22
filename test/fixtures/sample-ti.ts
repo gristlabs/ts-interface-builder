@@ -29,6 +29,7 @@ export const ISampling = t.iface(["ICacheItem"], [
     t.prop("foo", "string"),
     t.prop("bar", "number"),
   ])),
+  t.prop("xliteral", t.union(t.lit("foo"), t.lit("ba\"r"), t.lit(3))),
   t.prop("xfunc", t.func("number", t.param("price", "number"), t.param("quantity", "number"))),
   t.prop("xfunc2", t.func("number", t.param("price", "number"), t.param("quantity", "number", t.opt))),
 ]);

@@ -4,6 +4,9 @@
   "description": "Validate data against TypeScript interfaces at runtime",
   "main": "dist/index",
   "typings": "dist/index",
+  "bin": {
+    "ts-interface-builder": "bin/ts-interface-builder"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
