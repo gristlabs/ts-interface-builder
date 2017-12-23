@@ -71,17 +71,16 @@ export class Compiler {
   }
 
   private _compileIdentifier(node: ts.Identifier): string {
-    const name = this.getName(node);
-    return `"${name}"`;
+    return `"${node.getText()}"`;
   }
   private _compileParameterDeclaration(node: ts.ParameterDeclaration): string {
     const name = this.getName(node.name);
-    const isOpt = node.questionToken ? ", t.opt" : "";
+    const isOpt = node.questionToken ? ", true" : "";
     return `t.param("${name}", ${this.compileNode(node.type!)}${isOpt})`;
   }
   private _compilePropertySignature(node: ts.PropertySignature): string {
     const name = this.getName(node.name);
-    const isOpt = node.questionToken ? ", t.opt" : "";
+    const isOpt = node.questionToken ? ", true" : "";
     return `t.prop("${name}", ${this.compileNode(node.type!)}${isOpt})`;
   }
   private _compileMethodSignature(node: ts.MethodSignature): string {
@@ -91,8 +90,14 @@ export class Compiler {
     return `t.prop("${name}", t.func(${items.join(", ")}))`;
   }
   private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
-    const name = this.getName(node.typeName);
-    return `"${name}"`;
+    if (!node.typeArguments) {
+      return `"${node.typeName.getText()}"`;
+    } else if (node.typeName.getText() === "Promise") {
+      // Unwrap Promises.
+      return this.compileNode(node.typeArguments[0]);
+    } else {
+      throw new Error(`Generics are not yet supported by ts-interface-builder: ` + node.getText());
+    }
   }
   private _compileFunctionTypeNode(node: ts.FunctionTypeNode): string {
     const params = node.parameters.map(this.compileNode, this);
@@ -120,7 +125,6 @@ export class Compiler {
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
     const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
-    // typeParameters?: NodeArray<TypeParameterDeclaration>;
     const extend: string[] = [];
     if (node.heritageClauses) {
       for (const h of node.heritageClauses) {

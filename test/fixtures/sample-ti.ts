@@ -2,12 +2,12 @@ export const ICacheItem = t.iface([], [
   t.prop("key", "string"),
   t.prop("value", "any"),
   t.prop("size", "number"),
-  t.prop("tag", "string", t.opt),
+  t.prop("tag", "string", true),
 ]);
 
 export const ILRUCache = t.iface([], [
   t.prop("capacity", "number"),
-  t.prop("set", t.func("boolean", t.param("item", "ICacheItem"), t.param("overwrite", "boolean", t.opt))),
+  t.prop("set", t.func("boolean", t.param("item", "ICacheItem"), t.param("overwrite", "boolean", true))),
   t.prop("get", t.func("ICacheItem", t.param("key", "string"))),
 ]);
 
@@ -18,7 +18,7 @@ export const ISampling = t.iface(["ICacheItem"], [
   t.prop("xstring2", "string"),
   t.prop("xany", "any"),
   t.prop("xnumber", "number"),
-  t.prop("xnumber2", "number", t.opt),
+  t.prop("xnumber2", "number", true),
   t.prop("xnull", "null"),
   t.prop("xMyType", "MyType"),
   t.prop("xarray", t.array("string")),
@@ -31,5 +31,5 @@ export const ISampling = t.iface(["ICacheItem"], [
   ])),
   t.prop("xliteral", t.union(t.lit("foo"), t.lit("ba\"r"), t.lit(3))),
   t.prop("xfunc", t.func("number", t.param("price", "number"), t.param("quantity", "number"))),
-  t.prop("xfunc2", t.func("number", t.param("price", "number"), t.param("quantity", "number", t.opt))),
+  t.prop("xfunc2", t.func("number", t.param("price", "number"), t.param("quantity", "number", true))),
 ]);

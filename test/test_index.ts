@@ -11,4 +11,10 @@ describe("ts-interface-builder", () => {
     const expected = await readFile(join(fixtures, "sample-ti.ts"), {encoding: "utf8"});
     assert.deepEqual(output, expected);
   });
+
+  it("should strip out promises", async () => {
+    const output = await Compiler.compile(join(fixtures, "promises.ts"));
+    const expected = await readFile(join(fixtures, "promises-ti.ts"), {encoding: "utf8"});
+    assert.deepEqual(output, expected);
+  });
 });
