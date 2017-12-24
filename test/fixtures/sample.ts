@@ -31,6 +31,7 @@ export interface ISampling extends ICacheItem {
   xarray2: MyType[];
   xtuple: [string, number];
   xunion: number | null;
+  xparen: (number|string);    // parenthesized type
   xiface: { foo: string; bar: number };
   xliteral: "foo" | "ba\"r" | 3;
   xfunc: (price: number, quantity: number) => number;

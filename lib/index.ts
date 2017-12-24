@@ -51,6 +51,8 @@ export class Compiler {
         return this._compileTypeAliasDeclaration(node as ts.TypeAliasDeclaration);
       case ts.SyntaxKind.ExpressionWithTypeArguments:
         return this._compileExpressionWithTypeArguments(node as ts.ExpressionWithTypeArguments);
+      case ts.SyntaxKind.ParenthesizedType:
+        return this._compileParenthesizedTypeNode(node as ts.ParenthesizedTypeNode);
       case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
       case ts.SyntaxKind.AnyKeyword: return '"any"';
       case ts.SyntaxKind.NumberKeyword: return '"number"';
@@ -140,8 +142,13 @@ export class Compiler {
   private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
     return this.compileNode(node.expression);
   }
+  private _compileParenthesizedTypeNode(node: ts.ParenthesizedTypeNode): string {
+    return this.compileNode(node.type);
+  }
   private _compileSourceFile(node: ts.SourceFile): string {
-    return node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n";
+    const prefix = `import * as t from "ts-interface-checker";\n\n`;
+    return prefix +
+      node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n";
   }
 }
 

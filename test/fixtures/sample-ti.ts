@@ -1,3 +1,5 @@
+import * as t from "ts-interface-checker";
+
 export const ICacheItem = t.iface([], [
   t.prop("key", "string"),
   t.prop("value", "any"),
@@ -25,6 +27,7 @@ export const ISampling = t.iface(["ICacheItem"], [
   t.prop("xarray2", t.array("MyType")),
   t.prop("xtuple", t.tuple("string", "number")),
   t.prop("xunion", t.union("number", "null")),
+  t.prop("xparen", t.union("number", "string")),
   t.prop("xiface", t.iface([], [
     t.prop("foo", "string"),
     t.prop("bar", "number"),
