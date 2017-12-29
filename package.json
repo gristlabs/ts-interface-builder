@@ -23,6 +23,10 @@
   ],
   "author": "Dmitry S, Grist Labs",
   "license": "Apache-2.0",
+  "files": [
+    "dist",
+    "bin"
+  ],
   "dependencies": {
     "commander": "^2.12.2",
     "fs-extra": "^4.0.3",

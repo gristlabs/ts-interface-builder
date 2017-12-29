@@ -82,14 +82,15 @@ export class Compiler {
   }
   private _compilePropertySignature(node: ts.PropertySignature): string {
     const name = this.getName(node.name);
-    const isOpt = node.questionToken ? ", true" : "";
-    return `t.prop("${name}", ${this.compileNode(node.type!)}${isOpt})`;
+    const prop = this.compileNode(node.type!);
+    const value = node.questionToken ? `t.opt(${prop})` : prop;
+    return `"${name}": ${value}`;
   }
   private _compileMethodSignature(node: ts.MethodSignature): string {
     const name = this.getName(node.name);
     const params = node.parameters.map(this.compileNode, this);
     const items = [this.compileNode(node.type!)].concat(params);
-    return `t.prop("${name}", t.func(${items.join(", ")}))`;
+    return `"${name}": t.func(${items.join(", ")})`;
   }
   private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
     if (!node.typeArguments) {
@@ -108,7 +109,7 @@ export class Compiler {
   }
   private _compileTypeLiteralNode(node: ts.TypeLiteralNode): string {
     const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
-    return `t.iface([], [\n${members.join("")}])`;
+    return `t.iface([], {\n${members.join("")}})`;
   }
   private _compileArrayTypeNode(node: ts.ArrayTypeNode): string {
     return `t.array(${this.compileNode(node.elementType)})`;
@@ -133,7 +134,7 @@ export class Compiler {
         extend.push(...h.types.map(this.compileNode, this));
       }
     }
-    return `export const ${name} = t.iface([${extend.join(", ")}], [\n${members.join("")}]);`;
+    return `export const ${name} = t.iface([${extend.join(", ")}], {\n${members.join("")}});`;
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     const name = this.getName(node.name);
@@ -188,7 +189,7 @@ export function main() {
     // Read and parse the source file.
     const ext = path.extname(filePath);
     const dir = outDir || path.dirname(filePath);
-    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ext);
+    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
     if (verbose) {
       console.log(`Compiling ${filePath} -> ${outPath}`);
     }
