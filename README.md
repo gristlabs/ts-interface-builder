@@ -19,7 +19,7 @@ npm install --save ts-interface-checker
 
 ## Usage
 
-This module works together with `ts-interface-checker` module. You use
+This module works together with [ts-interface-checker](https://github.com/gristlabs/ts-interface-checker) module. You use
 `ts-interface-builder` in a build step that converts some TypeScript interfaces
 to a new TypeScript file (with `-ti.ts` extension) that provides a runtime
 description of the interface. You then use `ts-interface-checker` in your
@@ -59,4 +59,4 @@ export const Square = t.iface([], {
 export default ...;
 ```
 
-See `ts-interface-checker` module for how to use this file in your program.
+See [ts-interface-checker](https://github.com/gristlabs/ts-interface-checker) module for how to use this file in your program.
