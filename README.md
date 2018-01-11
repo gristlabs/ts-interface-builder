@@ -1,6 +1,6 @@
 # ts-interface-builder
 
-> Validate data against TypeScript interfaces at runtime.
+> Compile TypeScript interfaces into a description that allows runtime validation.
 
 This tool runs at build time to create runtime validators from TypeScript
 interfaces. It allows validating data, such as parsed JSON objects received
@@ -16,12 +16,44 @@ npm install --save ts-interface-checker
 
 ## Usage
 
+This module works together with `ts-interface-checker` module. You use
+`ts-interface-builder` in a build step that converts some TypeScript interfaces
+to a new TypeScript file (with `-ti.ts` extension) that provides a runtime
+description of the interface. You then use `ts-interface-checker` in your
+program to create validator functions from this runtime description.
+
 ```
 $(npm bin)/ts-interface-builder [options] <typescript-files...>
 ```
 
-By default, produces `<ts-file>-ti.ts` file for each input file, which has runtime definitions of types in the input file. For example:
+By default, produces `<ts-file>-ti.ts` file for each input file, which has
+runtime definitions for all types in the input file. For example, if you have a
+TypeScript file that defines some types:
 
-...
-TO BE COMPLETED
-...
+```typescript
+// foo.ts
+interface Square {
+  size: number;
+  color?: string;
+}
+```
+
+Then you can generate code for runtime checks with:
+```bash
+$(npm bin)/ts-interface-builder foo.ts
+```
+
+It produces a file like this:
+```typescript
+// foo-ti.js
+import * as t from "ts-interface-checker";
+
+export const Square = t.iface([], {
+  "size": "number",
+  "color": t.opt("string"),
+});
+
+export default ...;
+```
+
+See `ts-interface-checker` module for how to use this file in your program.
