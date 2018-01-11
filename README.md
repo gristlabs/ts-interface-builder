@@ -23,7 +23,7 @@ description of the interface. You then use `ts-interface-checker` in your
 program to create validator functions from this runtime description.
 
 ```
-$(npm bin)/ts-interface-builder [options] <typescript-files...>
+`npm bin`/ts-interface-builder [options] <typescript-files...>
 ```
 
 By default, produces `<ts-file>-ti.ts` file for each input file, which has
@@ -40,7 +40,7 @@ interface Square {
 
 Then you can generate code for runtime checks with:
 ```bash
-$(npm bin)/ts-interface-builder foo.ts
+`npm bin`/ts-interface-builder foo.ts
 ```
 
 It produces a file like this:
