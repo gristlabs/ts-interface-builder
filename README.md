@@ -1,5 +1,8 @@
 # ts-interface-builder
 
+[![Build Status](https://travis-ci.org/gristlabs/ts-interface-builder.svg?branch=master)](https://travis-ci.org/gristlabs/ts-interface-builder)
+[![npm version](https://badge.fury.io/js/ts-interface-builder.svg)](https://badge.fury.io/js/ts-interface-builder)
+
 > Compile TypeScript interfaces into a description that allows runtime validation.
 
 This tool runs at build time to create runtime validators from TypeScript
