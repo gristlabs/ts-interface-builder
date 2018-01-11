@@ -36,4 +36,12 @@ export interface ISampling extends ICacheItem {
   xliteral: "foo" | "ba\"r" | 3;
   xfunc: (price: number, quantity: number) => number;
   xfunc2(price: number, quantity?: number): number;
+
+  // Ensure that omitted type parameters are seen as "any", without causing errors.
+  ximplicit;
+  ximplicitFunc: (price) => number;
+  ximplicitFunc2(price);
 }
+
+// We don't support enums yet, but should ignore them without failing.
+export enum SomeEnum { Foo, Bar }

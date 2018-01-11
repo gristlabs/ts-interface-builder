@@ -72,24 +72,28 @@ export class Compiler {
       node.getText());
   }
 
+  private compileOptType(typeNode: ts.Node|undefined): string {
+    return typeNode ? this.compileNode(typeNode) : '"any"';
+  }
+
   private _compileIdentifier(node: ts.Identifier): string {
     return `"${node.getText()}"`;
   }
   private _compileParameterDeclaration(node: ts.ParameterDeclaration): string {
     const name = this.getName(node.name);
     const isOpt = node.questionToken ? ", true" : "";
-    return `t.param("${name}", ${this.compileNode(node.type!)}${isOpt})`;
+    return `t.param("${name}", ${this.compileOptType(node.type)}${isOpt})`;
   }
   private _compilePropertySignature(node: ts.PropertySignature): string {
     const name = this.getName(node.name);
-    const prop = this.compileNode(node.type!);
+    const prop = this.compileOptType(node.type);
     const value = node.questionToken ? `t.opt(${prop})` : prop;
     return `"${name}": ${value}`;
   }
   private _compileMethodSignature(node: ts.MethodSignature): string {
     const name = this.getName(node.name);
     const params = node.parameters.map(this.compileNode, this);
-    const items = [this.compileNode(node.type!)].concat(params);
+    const items = [this.compileOptType(node.type)].concat(params);
     return `"${name}": t.func(${items.join(", ")})`;
   }
   private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
@@ -104,7 +108,7 @@ export class Compiler {
   }
   private _compileFunctionTypeNode(node: ts.FunctionTypeNode): string {
     const params = node.parameters.map(this.compileNode, this);
-    const items = [this.compileNode(node.type!)].concat(params);
+    const items = [this.compileOptType(node.type)].concat(params);
     return `t.func(${items.join(", ")})`;
   }
   private _compileTypeLiteralNode(node: ts.TypeLiteralNode): string {
