@@ -21,6 +21,8 @@ export class Compiler {
     return new Compiler(checker).compileNode(topNode);
   }
 
+  private exportedNames: string[] = [];
+
   constructor(private checker: ts.TypeChecker) {}
 
   private getName(id: ts.Node): string {
@@ -138,10 +140,12 @@ export class Compiler {
         extend.push(...h.types.map(this.compileNode, this));
       }
     }
+    this.exportedNames.push(name);
     return `export const ${name} = t.iface([${extend.join(", ")}], {\n${members.join("")}});`;
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     const name = this.getName(node.name);
+    this.exportedNames.push(name);
     return `export const ${name} = ${this.compileNode(node.type)};`;
   }
   private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
@@ -151,9 +155,14 @@ export class Compiler {
     return this.compileNode(node.type);
   }
   private _compileSourceFile(node: ts.SourceFile): string {
-    const prefix = `import * as t from "ts-interface-checker";\n\n`;
+    const prefix = `import * as t from "ts-interface-checker";\n` +
+                   "// tslint:disable:object-literal-key-quotes\n\n";
     return prefix +
-      node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n";
+      node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n\n" +
+      "const exportedTypeSuite: t.ITypeSuite = {\n" +
+      this.exportedNames.map((n) => `  ${n},\n`).join("") +
+      "};\n" +
+      "export default exportedTypeSuite;\n";
   }
 }
 
