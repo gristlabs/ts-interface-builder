@@ -60,3 +60,6 @@ export default ...;
 ```
 
 See [ts-interface-checker](https://github.com/gristlabs/ts-interface-checker) module for how to use this file in your program.
+
+## Limitations
+This module currently does not support generics, except Promises. Promises are supported by unwrapping `Promise<T>` to simply `T`.
