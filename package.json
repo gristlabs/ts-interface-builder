@@ -1,6 +1,6 @@
 {
   "name": "ts-interface-builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compile TypeScript interfaces into a description that allows runtime validation",
   "main": "dist/index",
   "typings": "dist/index",
@@ -24,11 +24,11 @@
   "author": "Dmitry S, Grist Labs",
   "license": "Apache-2.0",
   "repository": {
-    "type" : "git",
+    "type": "git",
     "url": "https://github.com/gristlabs/ts-interface-builder"
   },
   "bugs": {
-    "url" : "https://github.com/gristlabs/ts-interface-builder/issues"
+    "url": "https://github.com/gristlabs/ts-interface-builder/issues"
   },
   "files": [
     "dist",
