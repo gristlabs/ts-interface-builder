@@ -23,6 +23,13 @@
   ],
   "author": "Dmitry S, Grist Labs",
   "license": "Apache-2.0",
+  "repository": {
+    "type" : "git",
+    "url": "https://github.com/gristlabs/ts-interface-builder"
+  },
+  "bugs": {
+    "url" : "https://github.com/gristlabs/ts-interface-builder/issues"
+  },
   "files": [
     "dist",
     "bin"
