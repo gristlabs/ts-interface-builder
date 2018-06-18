@@ -110,6 +110,8 @@ export class Compiler {
     } else if (node.typeName.getText() === "Promise") {
       // Unwrap Promises.
       return this.compileNode(node.typeArguments[0]);
+    } else if (node.typeName.getText() === "Array") {
+      return `t.array(${this.compileNode(node.typeArguments[0])})`;
     } else {
       throw new Error(`Generics are not yet supported by ts-interface-builder: ` + node.getText());
     }
