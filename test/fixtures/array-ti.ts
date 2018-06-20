@@ -3,6 +3,10 @@ import * as t from "ts-interface-checker";
 
 export const IMyArrayContainer = t.iface([], {
   "myArray": t.array("number"),
+  "myArray2": t.array(t.iface([], {
+    "foo": "string",
+    "bar": "number",
+  })),
 });
 
 const exportedTypeSuite: t.ITypeSuite = {
