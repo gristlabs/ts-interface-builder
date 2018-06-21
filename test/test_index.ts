@@ -20,14 +20,14 @@ describe("ts-interface-builder", () => {
 
   it("should ignore generics", async () => {
     const output = await Compiler.compile(join(fixtures, "ignore-generics.ts"),
-      {ignoreGenerics: true, ignoreIndexSignature: false});
+      {ignoreGenerics: true});
     const expected = await readFile(join(fixtures, "ignore-generics-ti.ts"), {encoding: "utf8"});
     assert.deepEqual(output, expected);
   });
 
   it("should ignore index signature", async () => {
     const output = await Compiler.compile(join(fixtures, "ignore-index-signature.ts"),
-      {ignoreGenerics: false, ignoreIndexSignature: true});
+      {ignoreIndexSignature: true});
     const expected = await readFile(join(fixtures, "ignore-index-signature-ti.ts"), {encoding: "utf8"});
     assert.deepEqual(output, expected);
   });
