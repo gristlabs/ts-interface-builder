@@ -15,7 +15,7 @@ const defaultHeader =
 `;
 const ignoreNode = "";
 
-interface ICompilerOptions {
+export interface ICompilerOptions {
   ignoreGenerics?: boolean;
   ignoreIndexSignature?: boolean;
 }
