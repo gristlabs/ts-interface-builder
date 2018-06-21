@@ -116,6 +116,8 @@ export class Compiler {
     } else if (node.typeName.getText() === "Promise") {
       // Unwrap Promises.
       return this.compileNode(node.typeArguments[0]);
+    } else if (node.typeName.getText() === "Array") {
+      return `t.array(${this.compileNode(node.typeArguments[0])})`;
     } else {
       if (this.options.ignoreGenerics) {
         return '"any"';

@@ -31,4 +31,10 @@ describe("ts-interface-builder", () => {
     const expected = await readFile(join(fixtures, "ignore-index-signature-ti.ts"), {encoding: "utf8"});
     assert.deepEqual(output, expected);
   });
+
+  it("should compile Array", async () => {
+    const output = await Compiler.compile(join(fixtures, "array.ts"));
+    const expected = await readFile(join(fixtures, "array-ti.ts"), {encoding: "utf8"});
+    assert.deepEqual(output, expected);
+  });
 });
