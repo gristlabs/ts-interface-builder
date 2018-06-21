@@ -15,6 +15,11 @@ const defaultHeader =
 `;
 const ignoreNode = "IGNORE";
 
+interface ICompilerOptions {
+  ignoreGenerics: boolean;
+  ignoreIndexSignature: boolean;
+}
+
 // The main public interface is `Compiler.compile`.
 export class Compiler {
   public static compile(
@@ -118,12 +123,10 @@ export class Compiler {
       return this.compileNode(node.typeArguments[0]);
     } else if (node.typeName.getText() === "Array") {
       return `t.array(${this.compileNode(node.typeArguments[0])})`;
+    } else if (this.options.ignoreGenerics) {
+      return '"any"';
     } else {
-      if (this.options.ignoreGenerics) {
-        return '"any"';
-      } else {
-        throw new Error(`Generics are not yet supported by ts-interface-builder: ` + node.getText());
-      }
+      throw new Error(`Generics are not yet supported by ts-interface-builder: ` + node.getText());
     }
   }
   private _compileFunctionTypeNode(node: ts.FunctionTypeNode): string {
@@ -191,7 +194,7 @@ export class Compiler {
     }
 
     throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
-    node.getText());
+      node.getText());
   }
 }
 
@@ -202,11 +205,6 @@ function collectDiagnostics(program: ts.Program) {
     getCanonicalFileName(fileName: string) { return fileName; },
     getNewLine() { return "\n"; },
   });
-}
-
-interface ICompilerOptions {
-  ignoreGenerics: boolean;
-  ignoreIndexSignature: boolean;
 }
 
 /**
