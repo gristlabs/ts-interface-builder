@@ -170,7 +170,10 @@ export class Compiler {
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     const name = this.getName(node.name);
     this.exportedNames.push(name);
-    return `export const ${name} = ${this.compileNode(node.type)};`;
+    const compiled = this.compileNode(node.type);
+    // Turn string literals into explicit `name` nodes, as expected by ITypeSuite.
+    const fullType = compiled.startsWith('"') ? `t.name(${compiled})` : compiled;
+    return `export const ${name} = ${fullType};`;
   }
   private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
     return this.compileNode(node.expression);

@@ -13,6 +13,9 @@ interface ILRUCache {
 
 type MyType = boolean | number | ILRUCache;
 
+export type NumberAlias = number;
+export type NumberAlias2 = NumberAlias;
+
 export function foo() {
   process.stdout.write("bar\n");
 }
@@ -24,6 +27,8 @@ export interface ISampling extends ICacheItem {
   xany: any;
   xnumber: number;
   xnumber2?: number;
+  xNumberAlias: NumberAlias;
+  xNumberAlias2: NumberAlias2;
   xnull: null;
   /* more random comments */
   xMyType: MyType;
