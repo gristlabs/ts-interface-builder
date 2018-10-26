@@ -50,3 +50,18 @@ export interface ISampling extends ICacheItem {
 
 // We don't support enums yet, but should ignore them without failing.
 export enum SomeEnum { Foo, Bar }
+export enum Direction { Up = 1, Down, Left, Right }
+export enum DirectionStr {
+    Up = "UP",
+    Down = "DOWN",
+    Left = "LEFT",
+    Right = "RIGHT",
+}
+export enum BooleanLikeHeterogeneousEnum { No = 0, Yes = "YES" }
+export enum AnimalFlags {
+    None           = 0,
+    HasClaws       = 1 << 0,
+    CanFly         = 1 << 1,
+    EatsFish       = 1 << 2,
+    Endangered     = 1 << 3
+}

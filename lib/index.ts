@@ -62,6 +62,7 @@ export class Compiler {
       case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
       case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
+      case ts.SyntaxKind.EnumDeclaration: return this._compileEnumDeclaration(node as ts.EnumDeclaration);
       case ts.SyntaxKind.InterfaceDeclaration:
         return this._compileInterfaceDeclaration(node as ts.InterfaceDeclaration);
       case ts.SyntaxKind.TypeAliasDeclaration:
@@ -152,6 +153,13 @@ export class Compiler {
   private _compileLiteralTypeNode(node: ts.LiteralTypeNode): string {
     return `t.lit(${node.getText()})`;
   }
+  private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
+    const name = this.getName(node.name);
+    const members: string[] = node.members.map(m =>
+      `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
+    this.exportedNames.push(name);
+    return `export const ${name} = t.enum({\n${members.join("")}});`;
+  }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
     const members = node.members
@@ -199,6 +207,12 @@ export class Compiler {
     throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
       node.getText());
   }
+}
+
+function getTextOfConstantValue(value: string | number | undefined): string {
+  // Typescript has methods to escape values, but doesn't seem to expose them at all. Here I am
+  // casting `ts` to access this private member rather than implementing my own.
+  return value === undefined ? "undefined" : (ts as any).getTextOfConstantValue(value);
 }
 
 function collectDiagnostics(program: ts.Program) {
