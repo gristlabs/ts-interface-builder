@@ -20,6 +20,25 @@ export function foo() {
   process.stdout.write("bar\n");
 }
 
+// A few enum kinds.
+export enum SomeEnum { Foo, Bar }
+export enum Direction { Up = 1, Down, Left = 17, Right }
+export enum DirectionStr {
+    Up = "UP",
+    Down = "DOWN",
+    Left = "LEFT",
+    Right = "RIGHT",
+}
+export enum BooleanLikeHeterogeneousEnum { No = 0, Yes = "YES" }
+export enum EnumComputed { Foo, Bar = Direction.Left, Baz = Bar - 1 }
+export enum AnimalFlags {
+    None           = 0,
+    HasClaws       = 1 << 0,
+    CanFly         = 1 << 1,
+    EatsFish       = 1 << 2,
+    Endangered     = 1 << 3
+}
+
 // random comment.
 export interface ISampling extends ICacheItem {
   xstring: string;
@@ -41,12 +60,14 @@ export interface ISampling extends ICacheItem {
   xliteral: "foo" | "ba\"r" | 3;
   xfunc: (price: number, quantity: number) => number;
   xfunc2(price: number, quantity?: number): number;
+  xDirection: Direction;
+  xDirectionStr: DirectionStr;
+  // Ensure we support enum constants, often used for discriminated unions.
+  xDirUp: Direction.Up | Direction.Left;
+  xDirStrLeft: DirectionStr.Left;
 
   // Ensure that omitted type parameters are seen as "any", without causing errors.
   ximplicit;
   ximplicitFunc: (price) => number;
   ximplicitFunc2(price);
 }
-
-// We don't support enums yet, but should ignore them without failing.
-export enum SomeEnum { Foo, Bar }
