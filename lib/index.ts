@@ -48,7 +48,6 @@ export class Compiler {
   private indent(content: string): string {
     return content.replace(/\n/g, "\n  ");
   }
-
   private compileNode(node: ts.Node): string {
     switch (node.kind) {
       case ts.SyntaxKind.Identifier: return this._compileIdentifier(node as ts.Identifier);
@@ -118,6 +117,12 @@ export class Compiler {
   }
   private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
     if (!node.typeArguments) {
+      if (node.typeName.kind === ts.SyntaxKind.QualifiedName) {
+        const typeNode = this.checker.getTypeFromTypeNode(node);
+        if (typeNode.flags & ts.TypeFlags.EnumLiteral) {
+          return `t.enumlit("${node.typeName.left.getText()}", "${node.typeName.right.getText()}")`;
+        }
+      }
       return `"${node.typeName.getText()}"`;
     } else if (node.typeName.getText() === "Promise") {
       // Unwrap Promises.
@@ -158,7 +163,7 @@ export class Compiler {
     const members: string[] = node.members.map(m =>
       `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
     this.exportedNames.push(name);
-    return `export const ${name} = t.enum({\n${members.join("")}});`;
+    return `export const ${name} = t.enumtype({\n${members.join("")}});`;
   }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
