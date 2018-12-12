@@ -39,8 +39,15 @@ describe("ts-interface-builder", () => {
   });
 
   it("should traverse imports", async () => {
-    const output = await Compiler.compile(join(fixtures, "imports-parent.ts"));
+    const output = await Compiler.compile(join(fixtures, "imports-parent.ts"),
+      {traverseImports: true});
     const expected = await readFile(join(fixtures, "imports-parent-ti.ts"), { encoding: "utf8" });
+    assert.deepEqual(output, expected);
+  });
+
+  it("should not traverse imports when option is not set", async () => {
+    const output = await Compiler.compile(join(fixtures, "imports-parent.ts"));
+    const expected = await readFile(join(fixtures, "imports-parent-shallow-ti.ts"), { encoding: "utf8" });
     assert.deepEqual(output, expected);
   });
 });

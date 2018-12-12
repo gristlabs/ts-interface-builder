@@ -18,13 +18,14 @@ const ignoreNode = "";
 export interface ICompilerOptions {
   ignoreGenerics?: boolean;
   ignoreIndexSignature?: boolean;
+  traverseImports?: boolean;
 }
 
 // The main public interface is `Compiler.compile`.
 export class Compiler {
   public static compile(
       filePath: string,
-      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false},
+      options: ICompilerOptions = { ignoreGenerics: false, ignoreIndexSignature: false, traverseImports: false},
     ): string {
     const createProgramOptions = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
     const program = ts.createProgram([filePath], createProgramOptions);
@@ -198,6 +199,9 @@ export class Compiler {
     return this.compileNode(node.type);
   }
   private _compileImportDeclaration(node: ts.ImportDeclaration): string {
+    if (!this.options.traverseImports) {
+      return '';
+    }
     const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
     if (importedSym && importedSym.declarations) {
       return importedSym.declarations.map(declaration => this.compileNode(declaration)).join("");
