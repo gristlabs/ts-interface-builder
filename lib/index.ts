@@ -33,12 +33,12 @@ export class Compiler {
     if (!topNode) {
       throw new Error(`Can't process ${filePath}: ${collectDiagnostics(program)}`);
     }
-    return new Compiler(checker, options).compileNode(topNode);
+    return new Compiler(checker, options, topNode).compileNode(topNode);
   }
 
   private exportedNames: string[] = [];
 
-  constructor(private checker: ts.TypeChecker, private options: ICompilerOptions) {}
+  constructor(private checker: ts.TypeChecker, private options: ICompilerOptions, private topNode: ts.SourceFile) {}
 
   private getName(id: ts.Node): string {
     const symbol = this.checker.getSymbolAtLocation(id);
@@ -70,6 +70,9 @@ export class Compiler {
         return this._compileExpressionWithTypeArguments(node as ts.ExpressionWithTypeArguments);
       case ts.SyntaxKind.ParenthesizedType:
         return this._compileParenthesizedTypeNode(node as ts.ParenthesizedTypeNode);
+      case ts.SyntaxKind.ExportDeclaration:
+      case ts.SyntaxKind.ImportDeclaration:
+        return this._compileImportDeclaration(node as ts.ImportDeclaration);
       case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
       case ts.SyntaxKind.AnyKeyword: return '"any"';
       case ts.SyntaxKind.NumberKeyword: return '"number"';
@@ -194,11 +197,26 @@ export class Compiler {
   private _compileParenthesizedTypeNode(node: ts.ParenthesizedTypeNode): string {
     return this.compileNode(node.type);
   }
+  private _compileImportDeclaration(node: ts.ImportDeclaration): string {
+    const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
+    if (importedSym && importedSym.declarations) {
+      return importedSym.declarations.map(declaration => this.compileNode(declaration)).join("");
+    }
+    return '';
+  }
+  private _compileSourceFileStatements(node: ts.SourceFile): string {
+    return node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n");
+  }
   private _compileSourceFile(node: ts.SourceFile): string {
+    // for imported source files, skip the wrapper
+    if (node !== this.topNode) {
+      return this._compileSourceFileStatements(node);
+    }
+    // wrap the top node with a default export
     const prefix = `import * as t from "ts-interface-checker";\n` +
                    "// tslint:disable:object-literal-key-quotes\n\n";
     return prefix +
-      node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n") + "\n\n" +
+      this._compileSourceFileStatements(node) + "\n\n" +
       "const exportedTypeSuite: t.ITypeSuite = {\n" +
       this.exportedNames.map((n) => `  ${n},\n`).join("") +
       "};\n" +

@@ -37,4 +37,10 @@ describe("ts-interface-builder", () => {
     const expected = await readFile(join(fixtures, "array-ti.ts"), {encoding: "utf8"});
     assert.deepEqual(output, expected);
   });
+
+  it("should traverse imports", async () => {
+    const output = await Compiler.compile(join(fixtures, "imports-parent.ts"));
+    const expected = await readFile(join(fixtures, "imports-parent-ti.ts"), { encoding: "utf8" });
+    assert.deepEqual(output, expected);
+  });
 });
