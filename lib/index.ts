@@ -262,6 +262,7 @@ export function main() {
   .usage("[options] <typescript-file...>")
   .option("-g, --ignore-generics", `Ignores generics`)
   .option("-i, --ignore-index-signature", `Ignores index signature`)
+  .option("-t, --traverse-imports", `Traverses the full import tree and inlines all types into output`)
   .option("-s, --suffix <suffix>", `Suffix to append to generated files (default ${defaultSuffix})`, defaultSuffix)
   .option("-o, --outDir <path>", `Directory for output files; same as source file if omitted`)
   .option("-v, --verbose", "Produce verbose output")
@@ -274,6 +275,7 @@ export function main() {
   const options: ICompilerOptions = {
     ignoreGenerics: commander.ignoreGenerics,
     ignoreIndexSignature: commander.ignoreIndexSignature,
+    traverseImports: commander.traverseImports,
   };
 
   if (files.length === 0) {
