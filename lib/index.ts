@@ -18,14 +18,14 @@ const ignoreNode = "";
 export interface ICompilerOptions {
   ignoreGenerics?: boolean;
   ignoreIndexSignature?: boolean;
-  traverseImports?: boolean;
+  inlineImports?: boolean;
 }
 
 // The main public interface is `Compiler.compile`.
 export class Compiler {
   public static compile(
       filePath: string,
-      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false, traverseImports: false},
+      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false},
     ): string {
     const createProgramOptions = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
     const program = ts.createProgram([filePath], createProgramOptions);
@@ -199,7 +199,7 @@ export class Compiler {
     return this.compileNode(node.type);
   }
   private _compileImportDeclaration(node: ts.ImportDeclaration): string {
-    if (this.options.traverseImports) {
+    if (this.options.inlineImports) {
       const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
       if (importedSym && importedSym.declarations) {
         // this._compileSourceFile will get called on every imported file when traversing imports. 
@@ -262,6 +262,7 @@ export function main() {
   .usage("[options] <typescript-file...>")
   .option("-g, --ignore-generics", `Ignores generics`)
   .option("-i, --ignore-index-signature", `Ignores index signature`)
+  .option("--inline-imports", `Traverses the full import tree and inlines all types into output`)
   .option("-s, --suffix <suffix>", `Suffix to append to generated files (default ${defaultSuffix})`, defaultSuffix)
   .option("-o, --outDir <path>", `Directory for output files; same as source file if omitted`)
   .option("-v, --verbose", "Produce verbose output")
@@ -274,6 +275,7 @@ export function main() {
   const options: ICompilerOptions = {
     ignoreGenerics: commander.ignoreGenerics,
     ignoreIndexSignature: commander.ignoreIndexSignature,
+    inlineImports: commander.inlineImports,
   };
 
   if (files.length === 0) {
