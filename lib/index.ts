@@ -19,15 +19,17 @@ export interface ICompilerOptions {
   ignoreGenerics?: boolean;
   ignoreIndexSignature?: boolean;
   inlineImports?: boolean;
+  outDir?: string
+  suffix: string
 }
 
 // The main public interface is `Compiler.compile`.
 export class Compiler {
   public static compile(
       filePath: string,
-      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false},
+      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false, outDir: undefined, suffix: defaultSuffix},
     ): string {
-    const createProgramOptions = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
+    const createProgramOptions: ts.CompilerOptions = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
     const program = ts.createProgram([filePath], createProgramOptions);
     const checker = program.getTypeChecker();
     const topNode = program.getSourceFile(filePath);
@@ -72,20 +74,21 @@ export class Compiler {
       case ts.SyntaxKind.ParenthesizedType:
         return this._compileParenthesizedTypeNode(node as ts.ParenthesizedTypeNode);
       case ts.SyntaxKind.ExportDeclaration:
+        return this._compileExportDeclaration(node as ts.ExportDeclaration);
       case ts.SyntaxKind.ImportDeclaration:
         return this._compileImportDeclaration(node as ts.ImportDeclaration);
       case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
-      case ts.SyntaxKind.AnyKeyword: return '"any"';
-      case ts.SyntaxKind.NumberKeyword: return '"number"';
-      case ts.SyntaxKind.ObjectKeyword: return '"object"';
-      case ts.SyntaxKind.BooleanKeyword: return '"boolean"';
-      case ts.SyntaxKind.StringKeyword: return '"string"';
-      case ts.SyntaxKind.SymbolKeyword: return '"symbol"';
-      case ts.SyntaxKind.ThisKeyword: return '"this"';
-      case ts.SyntaxKind.VoidKeyword: return '"void"';
-      case ts.SyntaxKind.UndefinedKeyword: return '"undefined"';
-      case ts.SyntaxKind.NullKeyword: return '"null"';
-      case ts.SyntaxKind.NeverKeyword: return '"never"';
+      case ts.SyntaxKind.AnyKeyword: return 'Joi.any()';
+      case ts.SyntaxKind.NumberKeyword: return 'Joi.number()';
+      case ts.SyntaxKind.ObjectKeyword: return 'Joi.object()';
+      case ts.SyntaxKind.BooleanKeyword: return 'Joi.boolean()';
+      case ts.SyntaxKind.StringKeyword: return 'Joi.string()';
+      case ts.SyntaxKind.SymbolKeyword: return 'Joi.symbol()';
+      //case ts.SyntaxKind.ThisKeyword: return '"this"';
+      //case ts.SyntaxKind.VoidKeyword: return '"void"';
+      case ts.SyntaxKind.UndefinedKeyword: return 'Joi.valid(undefined)';
+      case ts.SyntaxKind.NullKeyword: return 'Joi.valid(null)';
+      case ts.SyntaxKind.NeverKeyword: return 'Joi.forbidden()';
       case ts.SyntaxKind.IndexSignature:
         return this._compileIndexSignatureDeclaration(node as ts.IndexSignatureDeclaration);
     }
@@ -96,80 +99,90 @@ export class Compiler {
   }
 
   private compileOptType(typeNode: ts.Node|undefined): string {
-    return typeNode ? this.compileNode(typeNode) : '"any"';
+    return typeNode ? this.compileNode(typeNode) : 'Joi.any()';
   }
 
   private _compileIdentifier(node: ts.Identifier): string {
-    return `"${node.getText()}"`;
+    return node.getText();
   }
   private _compileParameterDeclaration(node: ts.ParameterDeclaration): string {
     const name = this.getName(node.name);
-    const isOpt = node.questionToken ? ", true" : "";
-    return `t.param("${name}", ${this.compileOptType(node.type)}${isOpt})`;
+    const isOpt = node.questionToken ? ", optional" : "";
+    return `Param('${name}', ${this.compileOptType(node.type)}${isOpt})`;
   }
   private _compilePropertySignature(node: ts.PropertySignature): string {
     const name = this.getName(node.name);
     const prop = this.compileOptType(node.type);
-    const value = node.questionToken ? `t.opt(${prop})` : prop;
-    return `"${name}": ${value}`;
+    const value = node.questionToken ? prop : `${prop}.required()`;
+    return `'${name}': ${value}`;
   }
   private _compileMethodSignature(node: ts.MethodSignature): string {
     const name = this.getName(node.name);
-    const params = node.parameters.map(this.compileNode, this);
-    const items = [this.compileOptType(node.type)].concat(params);
-    return `"${name}": t.func(${items.join(", ")})`;
+    //const params = node.parameters.map(this.compileNode, this);
+    //const items = [this.compileOptType(node.type)].concat(params);
+    return `'${name}': Joi.func().required()`;
+    //return `'${name}': Joi.func().required() /*${items.join(", ")})*/`;
   }
   private _compileTypeReferenceNode(node: ts.TypeReferenceNode): string {
     if (!node.typeArguments) {
-      if (node.typeName.kind === ts.SyntaxKind.QualifiedName) {
+      /*if (node.typeName.kind === ts.SyntaxKind.QualifiedName) {
         const typeNode = this.checker.getTypeFromTypeNode(node);
         if (typeNode.flags & ts.TypeFlags.EnumLiteral) {
           return `t.enumlit("${node.typeName.left.getText()}", "${node.typeName.right.getText()}")`;
         }
+      }*/
+      switch (node.typeName.getText()) {
+        case 'Date': return 'Joi.date()';
+        case 'Buffer': return 'Joi.binary()';
       }
-      return `"${node.typeName.getText()}"`;
-    } else if (node.typeName.getText() === "Promise") {
-      // Unwrap Promises.
-      return this.compileNode(node.typeArguments[0]);
+      return `Joi.lazy(() => ${node.typeName.getText()})`;
     } else if (node.typeName.getText() === "Array") {
-      return `t.array(${this.compileNode(node.typeArguments[0])})`;
+      return `Joi.array().items(${this.compileNode(node.typeArguments[0])})`;
     } else if (this.options.ignoreGenerics) {
-      return '"any"';
+      return 'Joi.any()';
     } else {
       throw new Error(`Generics are not yet supported by ts-interface-builder: ` + node.getText());
     }
   }
   private _compileFunctionTypeNode(node: ts.FunctionTypeNode): string {
-    const params = node.parameters.map(this.compileNode, this);
-    const items = [this.compileOptType(node.type)].concat(params);
-    return `t.func(${items.join(", ")})`;
+    //const params = node.parameters.map(this.compileNode, this);
+    //const items = [this.compileOptType(node.type)].concat(params);
+    return `Joi.func()`;
+    //return `Joi.func() /*${items.join(", ")})*/`;
   }
   private _compileTypeLiteralNode(node: ts.TypeLiteralNode): string {
     const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
-    return `t.iface([], {\n${members.join("")}})`;
+    return `Joi.object().keys({\n${members.join("")}})`;
   }
   private _compileArrayTypeNode(node: ts.ArrayTypeNode): string {
-    return `t.array(${this.compileNode(node.elementType)})`;
+    return `Joi.array().items(${this.compileNode(node.elementType)})`;
   }
   private _compileTupleTypeNode(node: ts.TupleTypeNode): string {
     const members = node.elementTypes.map(this.compileNode, this);
-    return `t.tuple(${members.join(", ")})`;
+    return `Joi.array().ordered(${members.join(", ")})`;
   }
   private _compileUnionTypeNode(node: ts.UnionTypeNode): string {
     const members = node.types.map(this.compileNode, this);
-    return `t.union(${members.join(", ")})`;
+    return `Joi.alternatives(${members.join(", ")})`;
   }
   private _compileLiteralTypeNode(node: ts.LiteralTypeNode): string {
-    return `t.lit(${node.getText()})`;
+    return `Joi.valid(${node.getText()})`;
   }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
     const name = this.getName(node.name);
-    const members: string[] = node.members.map(m =>
-      `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
+    //const members: string[] = node.members.map(m =>
+    //  `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
+    const values: string[] = node.members.map(m => getTextOfConstantValue(this.checker.getConstantValue(m)))
     this.exportedNames.push(name);
-    return `export const ${name} = t.enumtype({\n${members.join("")}});`;
+    return `export const ${name} = Joi.valid(${values.join(', ')}).strict();`;
   }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
+    /*const tags = ts.getJSDocTags(node);
+    if (tags.find((tag) => tag.getText() === '@schema') === undefined) {
+      // not for use in a schema
+      return ''
+    }*/
+
     const name = this.getName(node.name);
     const members = node.members
       .map((n) => this.compileNode(n))
@@ -181,16 +194,23 @@ export class Compiler {
         extend.push(...h.types.map(this.compileNode, this));
       }
     }
+    
+    // has array, unsupported, just don't generate stuff
+    if (extend.indexOf('Array') !== -1) {
+        return ''
+    }
+
     this.exportedNames.push(name);
-    return `export const ${name} = t.iface([${extend.join(", ")}], {\n${members.join("")}});`;
+    const concats = extend.map((extend) => `.concat(${extend})`);
+    return `export const ${name} = Joi.object()${concats.join('')}.keys({\n${members.join("")}}).strict();`;
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     const name = this.getName(node.name);
     this.exportedNames.push(name);
     const compiled = this.compileNode(node.type);
     // Turn string literals into explicit `name` nodes, as expected by ITypeSuite.
-    const fullType = compiled.startsWith('"') ? `t.name(${compiled})` : compiled;
-    return `export const ${name} = ${fullType};`;
+    const fullType = compiled.startsWith('"') ? `Joi.valid(${compiled})` : compiled;
+    return `export const ${name} = ${fullType}.strict();`;
   }
   private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
     return this.compileNode(node.expression);
@@ -198,7 +218,79 @@ export class Compiler {
   private _compileParenthesizedTypeNode(node: ts.ParenthesizedTypeNode): string {
     return this.compileNode(node.type);
   }
+  private _compileExportDeclaration(node: ts.ExportDeclaration): string {
+    if (node.exportClause && node.moduleSpecifier) {
+      const rawModuleSpecifier = node.moduleSpecifier.getText();
+      const moduleSpecifier = rawModuleSpecifier.substring(1, rawModuleSpecifier.length - 1);
+      console.log('export', moduleSpecifier)
+      // must be a file, for now
+      if (moduleSpecifier.startsWith('.')) {
+        const exportClause = ['export { '];
+        let first: boolean = true;
+        for (const element of node.exportClause.elements) {
+          let exportPart: string|undefined = undefined;
+
+          if (element.propertyName) {
+            exportPart = `${element.propertyName.getText()} as ${element.name.getText()}`;
+          }
+          else {
+            exportPart = element.name.getText();
+          }
+
+          exportClause.push(first ? exportPart : `, ${exportPart}`)
+          first = false
+        }
+
+        // format to new module path
+        const filePath = moduleSpecifier
+        const ext = path.extname(filePath);
+        const dir = this.options.outDir ? './' : path.dirname(filePath);
+        const outPath = `${dir}${path.basename(filePath, ext) + this.options.suffix}`;
+        console.log(outPath)
+        exportClause.push(` } from '${outPath}'`)
+        return exportClause.join('')
+      }
+    }
+    return '';
+  }
   private _compileImportDeclaration(node: ts.ImportDeclaration): string {
+    if (node.importClause) {
+      const rawModuleSpecifier = node.moduleSpecifier.getText();
+      const moduleSpecifier = rawModuleSpecifier.substring(1, rawModuleSpecifier.length - 1);
+      console.log('import', moduleSpecifier)
+      // must be a file, for now
+      if (moduleSpecifier.startsWith('.')) {
+        // also must have named imports (default export interfaces, nope)
+        const namedBindings = node.importClause.namedBindings;
+        if (namedBindings && namedBindings.kind === ts.SyntaxKind.NamedImports) {
+          const importClause = ['import { '];
+          let first: boolean = true;
+          for (const element of namedBindings.elements) {
+            let importPart: string|undefined = undefined;
+
+            if (element.propertyName) {
+              importPart = `${element.propertyName.getText()} as ${element.name.getText()}`;
+            }
+            else {
+              importPart = element.name.getText();
+            }
+
+            importClause.push(first ? importPart : `, ${importPart}`)
+            first = false
+          }
+
+          // format to new module path
+          const filePath = moduleSpecifier
+          const ext = path.extname(filePath);
+          const dir = this.options.outDir ? './' : path.dirname(filePath);
+          const outPath = `${dir}${path.basename(filePath, ext) + this.options.suffix}`;
+          console.log(outPath)
+          importClause.push(` } from '${outPath}'`)
+          return importClause.join('')
+        }
+      }
+    }
+    
     if (this.options.inlineImports) {
       const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
       if (importedSym && importedSym.declarations) {
@@ -219,14 +311,14 @@ export class Compiler {
       return this._compileSourceFileStatements(node);
     }
     // wrap the top node with a default export
-    const prefix = `import * as t from "ts-interface-checker";\n` +
+    const prefix = `import * as Joi from "joi";\n` +
                    "// tslint:disable:object-literal-key-quotes\n\n";
     return prefix +
-      this._compileSourceFileStatements(node) + "\n\n" +
-      "const exportedTypeSuite: t.ITypeSuite = {\n" +
+      this._compileSourceFileStatements(node) + "\n\n";// +
+      /*"const exportedTypeSuite: t.ITypeSuite = {\n" +
       this.exportedNames.map((n) => `  ${n},\n`).join("") +
       "};\n" +
-      "export default exportedTypeSuite;\n";
+      "export default exportedTypeSuite;\n";*/
   }
   private _compileIndexSignatureDeclaration(node: ts.IndexSignatureDeclaration): string {
     if (this.options.ignoreIndexSignature) {
@@ -276,6 +368,8 @@ export function main() {
     ignoreGenerics: commander.ignoreGenerics,
     ignoreIndexSignature: commander.ignoreIndexSignature,
     inlineImports: commander.inlineImports,
+    outDir,
+    suffix
   };
 
   if (files.length === 0) {
