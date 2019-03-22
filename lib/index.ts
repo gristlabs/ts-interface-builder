@@ -222,7 +222,6 @@ export class Compiler {
     if (node.exportClause && node.moduleSpecifier) {
       const rawModuleSpecifier = node.moduleSpecifier.getText();
       const moduleSpecifier = rawModuleSpecifier.substring(1, rawModuleSpecifier.length - 1);
-      console.log('export', moduleSpecifier)
       // must be a file, for now
       if (moduleSpecifier.startsWith('.')) {
         const exportClause = ['export { '];
@@ -246,7 +245,6 @@ export class Compiler {
         const ext = path.extname(filePath);
         const dir = this.options.outDir ? './' : path.dirname(filePath);
         const outPath = `${dir}${path.basename(filePath, ext) + this.options.suffix}`;
-        console.log(outPath)
         exportClause.push(` } from '${outPath}'`)
         return exportClause.join('')
       }
@@ -257,7 +255,6 @@ export class Compiler {
     if (node.importClause) {
       const rawModuleSpecifier = node.moduleSpecifier.getText();
       const moduleSpecifier = rawModuleSpecifier.substring(1, rawModuleSpecifier.length - 1);
-      console.log('import', moduleSpecifier)
       // must be a file, for now
       if (moduleSpecifier.startsWith('.')) {
         // also must have named imports (default export interfaces, nope)
@@ -284,7 +281,6 @@ export class Compiler {
           const ext = path.extname(filePath);
           const dir = this.options.outDir ? './' : path.dirname(filePath);
           const outPath = `${dir}${path.basename(filePath, ext) + this.options.suffix}`;
-          console.log(outPath)
           importClause.push(` } from '${outPath}'`)
           return importClause.join('')
         }
