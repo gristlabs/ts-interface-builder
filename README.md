@@ -17,14 +17,14 @@ npm install --save joi
 ```
 
 `ts-joi-schema-generator` in a build step that converts some TypeScript interfaces
-to a new TypeScript file (with `-ti.ts` extension) that provides a runtime
+to a new TypeScript file (with `-schema.ts` extension) that provides a runtime
 description of the interface. These are Joi schemas, and are ready to use as-is.
 
 ```
 `npm bin`/ts-joi-schema-generator [options] <typescript-files...>
 ```
 
-By default, produces `<ts-file>-ti.ts` file for each input file, which has
+By default, produces `<ts-file>-schema.ts` file for each input file, which has
 runtime definitions for all types in the input file. For example, if you have a
 TypeScript file that defines some types:
 
@@ -43,7 +43,7 @@ Then you can generate code for runtime checks with:
 
 It produces a file like this:
 ```typescript
-// foo-ti.js
+// foo-schema.js
 import * as Joi from 'joi';
 
 export const Square = Joi.object().keys({
