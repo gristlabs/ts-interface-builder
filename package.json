@@ -1,11 +1,11 @@
 {
-  "name": "ts-interface-builder",
-  "version": "0.1.8",
-  "description": "Compile TypeScript interfaces into a description that allows runtime validation",
+  "name": "ts-joi-schema-builder",
+  "version": "0.1.0",
+  "description": "Compile TypeScript interfaces into a Joi schemas",
   "main": "dist/index",
   "typings": "dist/index",
   "bin": {
-    "ts-interface-builder": "bin/ts-interface-builder"
+    "ts-joi-schema-builder": "bin/ts-joi-schema-builder"
   },
   "scripts": {
     "build": "tsc",
@@ -25,10 +25,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gristlabs/ts-interface-builder"
+    "url": "https://github.com/gristlabs/ts-joi-schema-builder"
   },
   "bugs": {
-    "url": "https://github.com/gristlabs/ts-interface-builder/issues"
+    "url": "https://github.com/gristlabs/ts-joi-schema-builder/issues"
   },
   "files": [
     "dist",
