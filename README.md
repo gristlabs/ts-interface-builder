@@ -38,7 +38,7 @@ interface Square {
 
 Then you can generate code for runtime checks with:
 ```bash
-`npm bin`/ts-interface-builder foo.ts
+`npm bin`/ts-interface-schema-generator foo.ts
 ```
 
 It produces a file like this:

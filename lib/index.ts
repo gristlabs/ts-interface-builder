@@ -169,6 +169,10 @@ export class Compiler {
     return `Joi.valid(${node.getText()})`;
   }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
+    if (!this.hasTag(node, 'schema')) {
+      return ''
+    }
+    
     const name = this.getName(node.name);
     //const members: string[] = node.members.map(m =>
     //  `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
@@ -177,11 +181,9 @@ export class Compiler {
     return `export const ${name} = Joi.valid(${values.join(', ')}).strict();`;
   }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
-    /*const tags = ts.getJSDocTags(node);
-    if (tags.find((tag) => tag.getText() === '@schema') === undefined) {
-      // not for use in a schema
+    if (!this.hasTag(node, 'schema')) {
       return ''
-    }*/
+    }
 
     const name = this.getName(node.name);
     const members = node.members
@@ -205,6 +207,10 @@ export class Compiler {
     return `export const ${name} = Joi.object()${concats.join('')}.keys({\n${members.join("")}}).strict();`;
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
+    if (!this.hasTag(node, 'schema')) {
+      return ''
+    }
+
     const name = this.getName(node.name);
     this.exportedNames.push(name);
     const compiled = this.compileNode(node.type);
@@ -324,6 +330,10 @@ export class Compiler {
     throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-joi-schema-generator: ` +
       node.getText());
   }
+  private hasTag(node: ts.Node, tagName: string) {
+    const tags = ts.getJSDocTags(node);
+    return tags.find((tag) => tag.getText() === `@${tagName}`) !== undefined
+  }
 }
 
 function getTextOfConstantValue(value: string | number | undefined): string {
@@ -344,7 +354,7 @@ function collectDiagnostics(program: ts.Program) {
 /**
  * Main entry point when used from the command line.
  */
-export function main() {
+export async function main() {
   commander
   .description("Create runtime validator module from TypeScript interfaces")
   .usage("[options] <typescript-file...>")
