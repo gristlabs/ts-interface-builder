@@ -170,9 +170,9 @@ export class Compiler {
   }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
     if (!this.hasTag(node, 'schema')) {
-      return ''
+      return this.defaultEmptyDeclaration(node)
     }
-    
+
     const name = this.getName(node.name);
     //const members: string[] = node.members.map(m =>
     //  `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
@@ -182,7 +182,7 @@ export class Compiler {
   }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     if (!this.hasTag(node, 'schema')) {
-      return ''
+      return this.defaultEmptyDeclaration(node)
     }
 
     const name = this.getName(node.name);
@@ -208,7 +208,7 @@ export class Compiler {
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     if (!this.hasTag(node, 'schema')) {
-      return ''
+      return this.defaultEmptyDeclaration(node)
     }
 
     const name = this.getName(node.name);
@@ -333,6 +333,18 @@ export class Compiler {
   private hasTag(node: ts.Node, tagName: string) {
     const tags = ts.getJSDocTags(node);
     return tags.find((tag) => tag.getText() === `@${tagName}`) !== undefined
+  }
+  private isExport(node: ts.Node) {
+    if (node.modifiers) {
+      return node.modifiers.some((node) => node.getText() === 'export')
+    }
+    return false
+  }
+  private defaultEmptyDeclaration(node: ts.Node & { name: ts.Identifier }) {
+    if (this.isExport(node)) {
+      return `export const ${this.getName(node.name)} = undefined;`
+    }
+    return ''
   }
 }
 
