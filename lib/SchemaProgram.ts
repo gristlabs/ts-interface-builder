@@ -5,11 +5,13 @@ import * as path from 'path';
 import * as Defaults from './defaults';
 import { IContextTags, SchemaBuilder, SchemaType, IMemberDeclaration, INamedBinding } from './SchemaBuilder';
 
+/** @schema */
 export interface ICompilerOptions {
   tscArgs: readonly string[]
   tsconfig?: string
   outDir?: string
-  suffix: string
+  fileSuffix?: string
+  schemaSuffix?: string
 }
 
 interface ICompilerContext {
@@ -43,7 +45,6 @@ export class SchemaProgram {
   private contexts: ICompilerContext[] = [];
 
   public static compile(options: ICompilerOptions) {
-    options = { suffix: Defaults.suffix, ...options };
     const config = SchemaProgram.getParsedCommandLine(options);
     const program = ts.createProgram(config.fileNames, config.options);
     const compiler = new SchemaProgram(options, program);
@@ -96,7 +97,7 @@ export class SchemaProgram {
       const content = schema.render();
       if (content) {
         const { dir, name } = path.parse(file);
-        const outFile = path.format({ dir: this.options.outDir || dir, name: `${name}${this.options.suffix}`, ext: '.ts' });
+        const outFile = path.format({ dir: this.options.outDir || dir, name: `${name}${this.options.fileSuffix || Defaults.fileSuffix}`, ext: '.ts' });
         result.push({ schemaFile: path.relative('./', outFile), content: content });
       }
     }
@@ -216,6 +217,7 @@ export class SchemaProgram {
       case ts.SyntaxKind.IntersectionType: return this.compileIntersectionTypeNode(node as ts.IntersectionTypeNode);
       case ts.SyntaxKind.ParenthesizedType: return this.compileParenthesizedTypeNode(node as ts.ParenthesizedTypeNode);
       case ts.SyntaxKind.ExpressionWithTypeArguments: return this.compileExpressionWithTypeArguments(node as ts.ExpressionWithTypeArguments);
+      case ts.SyntaxKind.TypeOperator: return this.compileTypeOperator(node as ts.TypeOperatorNode);
 
       case ts.SyntaxKind.AnyKeyword: return { type: 'any' };
       case ts.SyntaxKind.NullKeyword: return { type: 'null' };
@@ -332,6 +334,13 @@ export class SchemaProgram {
       throw new Error('compileExpression Unable to compile type arguments');
     }
     return this.compileType(node.expression);
+  }
+
+  private compileTypeOperator(node: ts.TypeOperatorNode) {
+    if (node.operator === ts.SyntaxKind.ReadonlyKeyword) {
+      return this.compileType(node.type);
+    }
+    throw new Error(`compileTypeOperator Unsupported operator: ${ts.SyntaxKind[node.operator]}`);
   }
 
   private compileEnumDeclaration(node: ts.EnumDeclaration) {
@@ -471,7 +480,8 @@ export class SchemaProgram {
     const { name } = path.parse(file);
 
     // let's not crash on mutually importing files, try to not do that tho
-    if (!this.schemas.has(file) && !name.endsWith(this.options.suffix)) {
+    const suffix = this.options.fileSuffix || Defaults.fileSuffix;
+    if (!this.schemas.has(file) && (!suffix || !name.endsWith(suffix))) {
       const schema = new SchemaBuilder(this, file, this.options);
       const context: ICompilerContext = { schema };
       this.schemas.set(file, schema);

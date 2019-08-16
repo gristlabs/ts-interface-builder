@@ -1,6 +1,6 @@
 {
   "name": "ts-joi-schema-generator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Compile TypeScript interfaces into a Joi schemas",
   "main": "dist/index",
   "typings": "dist/index",

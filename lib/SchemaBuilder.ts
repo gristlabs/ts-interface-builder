@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as Defaults from './defaults';
 import { SchemaProgram, ICompilerOptions } from './SchemaProgram';
 
 export interface IContextTags {
@@ -332,7 +333,7 @@ export class SchemaBuilder {
     if (declaration.file) {
       const filePath = declaration.file
       const { dir, name } = path.parse(filePath);
-      const outPath = path.format({ dir: this.options.outDir || dir, name: `${name}${this.options.suffix}` });
+      const outPath = path.format({ dir: this.options.outDir || dir, name: `${name}${this.options.fileSuffix || Defaults.fileSuffix}` });
       from = ` from './${path.relative(this.options.outDir || './', outPath)}'`;
     }
 
@@ -504,7 +505,7 @@ export class SchemaBuilder {
   }
 
   private toSchemaName(name: string) {
-    return `${name}Schema`
+    return `${name}${this.options.schemaSuffix === undefined ? Defaults.schemaSuffix : this.options.schemaSuffix}`;
   }
 
   private indent(indentation: number) {
