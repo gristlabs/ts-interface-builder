@@ -13,7 +13,8 @@ TypeScript interface, and to produce informative error messages if they do not.
 
 This module makes use of [Joi](https://github.com/hapijs/joi) to validate, so make sure to install that along side this.
 ```
-npm install --save joi
+npm install --save @hapi/joi
+npm install --save-dev @types/@hapi__joi
 ```
 
 `ts-joi-schema-generator` in a build step that converts some TypeScript interfaces
@@ -21,7 +22,7 @@ to a new TypeScript file (with `-schema.ts` extension) that provides a runtime
 description of the interface. These are Joi schemas, and are ready to use as-is.
 
 ```
-`npm bin`/ts-joi-schema-generator [options] <typescript-files...>
+`npm bin`/ts-joi-schema-generator [options] -- <tsc-options...>
 ```
 
 By default, produces `<ts-file>-schema.ts` file for each input file, which has
@@ -38,7 +39,7 @@ interface Square {
 
 Then you can generate code for runtime checks with:
 ```bash
-`npm bin`/ts-interface-schema-generator foo.ts
+`npm bin`/ts-interface-schema-generator -- foo.ts
 ```
 
 It produces a file like this:
@@ -55,9 +56,10 @@ export const Square = Joi.object().keys({
 Check [Joi](https://github.com/hapijs/joi) to see how to validate or modify schemas to your needs.
 
 ## Limitations
-This module currently does not support generics. Some may be implemented (e.g. Omit and Partial) that are easy to define.
+This module currently does not support generics. Some may be implemented (e.g. Omit and Partial) that are easier to define.
 
 The original builder supported promises, but it just unwrapped the Promise which I found misleading.
 
 ## Notes
-The tests are borked because I haven't bothered updating them yet, needed this done fast.
+Intersection types that includes unions are not validated the same way as they are by Typescript, they are less strict only needing to match one of the union types.
+They also require @hapi/joi ^16.0.0 due to using custom validation, which is currently a preview.

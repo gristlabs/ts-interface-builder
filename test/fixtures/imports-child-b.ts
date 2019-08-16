@@ -1,3 +1,4 @@
+/** @schema */
 export interface TypeB { };
 
 // import and export on separate lines
