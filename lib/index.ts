@@ -164,7 +164,7 @@ export class Compiler {
     return `t.lit(${node.getText()})`;
   }
   private _compileOptionalTypeNode(node: ts.OptionalTypeNode): string {
-    return `t.opt(${this.compileOptType(node.type)})`;
+    return `t.opt(${this.compileNode(node.type)})`;
   }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
     const name = this.getName(node.name);
