@@ -62,6 +62,7 @@ export class Compiler {
       case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
       case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
+      case ts.SyntaxKind.OptionalType: return this._compileOptionalTypeNode(node as ts.OptionalTypeNode);
       case ts.SyntaxKind.EnumDeclaration: return this._compileEnumDeclaration(node as ts.EnumDeclaration);
       case ts.SyntaxKind.InterfaceDeclaration:
         return this._compileInterfaceDeclaration(node as ts.InterfaceDeclaration);
@@ -162,6 +163,9 @@ export class Compiler {
   private _compileLiteralTypeNode(node: ts.LiteralTypeNode): string {
     return `t.lit(${node.getText()})`;
   }
+  private _compileOptionalTypeNode(node: ts.OptionalTypeNode): string {
+    return `t.opt(${this.compileNode(node.type)})`;
+  }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
     const name = this.getName(node.name);
     const members: string[] = node.members.map(m =>
@@ -202,8 +206,8 @@ export class Compiler {
     if (this.options.inlineImports) {
       const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
       if (importedSym && importedSym.declarations) {
-        // this._compileSourceFile will get called on every imported file when traversing imports. 
-        // it's important to check that _compileSourceFile is being run against the topNode 
+        // this._compileSourceFile will get called on every imported file when traversing imports.
+        // it's important to check that _compileSourceFile is being run against the topNode
         // before adding the file wrapper for this reason.
         return importedSym.declarations.map(declaration => this.compileNode(declaration)).join("");
       }
