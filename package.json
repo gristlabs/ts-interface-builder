@@ -37,7 +37,7 @@
   "dependencies": {
     "commander": "^2.12.2",
     "fs-extra": "^4.0.3",
-    "typescript": "^2.6.2"
+    "typescript": "^3.0.0"
   },
   "devDependencies": {
     "@types/fs-extra": "^4.0.5",
