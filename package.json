@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "tsc && mocha -R list test/"
+    "test": "tsc && mocha 'test/*.ts'",
+    "prepack": "npm run test"
   },
   "keywords": [
     "typescript",
@@ -41,10 +42,10 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^4.0.5",
-    "@types/mocha": "^2.2.44",
+    "@types/mocha": "^5.2.7",
     "@types/node": "^8.0.57",
     "fs-extra": "^4.0.3",
-    "mocha": "^3.5.3",
+    "mocha": "^6.2.0",
     "ts-node": "^4.0.1"
   }
 }
