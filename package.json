@@ -1,6 +1,6 @@
 {
   "name": "ts-interface-builder",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "description": "Compile TypeScript interfaces into a description that allows runtime validation",
   "main": "dist/index",
   "typings": "dist/index",
