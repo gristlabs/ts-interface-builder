@@ -146,7 +146,10 @@ export class Compiler {
     return `t.func(${items.join(", ")})`;
   }
   private _compileTypeLiteralNode(node: ts.TypeLiteralNode): string {
-    const members = node.members.map((n) => "  " + this.indent(this.compileNode(n)) + ",\n");
+    const members = node.members
+      .map(n => this.compileNode(n))
+      .filter(n => n !== ignoreNode)
+      .map(n => "  " + this.indent(n) + ",\n");
     return `t.iface([], {\n${members.join("")}})`;
   }
   private _compileArrayTypeNode(node: ts.ArrayTypeNode): string {
@@ -176,9 +179,9 @@ export class Compiler {
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
     const members = node.members
-      .map((n) => this.compileNode(n))
-      .filter((n) => n !== ignoreNode)
-      .map((n) => "  " + this.indent(n) + ",\n");
+      .map(n => this.compileNode(n))
+      .filter(n => n !== ignoreNode)
+      .map(n => "  " + this.indent(n) + ",\n");
     const extend: string[] = [];
     if (node.heritageClauses) {
       for (const h of node.heritageClauses) {
