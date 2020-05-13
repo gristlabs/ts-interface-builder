@@ -61,6 +61,7 @@ export class Compiler {
       case ts.SyntaxKind.ArrayType: return this._compileArrayTypeNode(node as ts.ArrayTypeNode);
       case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
+      case ts.SyntaxKind.IntersectionType: return this._compileIntersectionTypeNode(node as ts.IntersectionTypeNode);
       case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
       case ts.SyntaxKind.OptionalType: return this._compileOptionalTypeNode(node as ts.OptionalTypeNode);
       case ts.SyntaxKind.EnumDeclaration: return this._compileEnumDeclaration(node as ts.EnumDeclaration);
@@ -162,6 +163,10 @@ export class Compiler {
   private _compileUnionTypeNode(node: ts.UnionTypeNode): string {
     const members = node.types.map(this.compileNode, this);
     return `t.union(${members.join(", ")})`;
+  }
+  private _compileIntersectionTypeNode(node: ts.IntersectionTypeNode): string {
+    const members = node.types.map(this.compileNode, this);
+    return `t.intersection(${members.join(", ")})`;
   }
   private _compileLiteralTypeNode(node: ts.LiteralTypeNode): string {
     return `t.lit(${node.getText()})`;
