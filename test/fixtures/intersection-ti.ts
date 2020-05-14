@@ -13,7 +13,7 @@ export const Car = t.intersection("Wheels", "Doors");
 
 export const House = t.intersection("Doors", t.iface([], {
   "numRooms": "number",
-}));
+}), "object");
 
 const exportedTypeSuite: t.ITypeSuite = {
   Wheels,

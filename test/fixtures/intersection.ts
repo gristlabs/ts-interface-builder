@@ -10,4 +10,4 @@ export type Car = Wheels & Doors
 
 export type House = Doors & {
   numRooms: number
-}
+} & object
