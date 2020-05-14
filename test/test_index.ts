@@ -38,6 +38,12 @@ describe("ts-interface-builder", () => {
     assert.deepEqual(output, expected);
   });
 
+  it("should compile intersection types", async() => {
+    const output = await Compiler.compile(join(fixtures, "intersection.ts"));
+    const expected = await readFile(join(fixtures, "intersection-ti.ts"), {encoding: "utf8"});
+    assert.deepEqual(output, expected);
+  })
+
   it("should inline imports", async () => {
     const output = await Compiler.compile(join(fixtures, "imports-parent.ts"),
       {inlineImports: true});
