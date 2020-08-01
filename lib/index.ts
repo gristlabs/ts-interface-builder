@@ -288,7 +288,7 @@ export function main() {
   commander
   .description("Create runtime validator module from TypeScript interfaces")
   .usage("[options] <typescript-file...>")
-  .option("--format <format>", `Format to use for output; options are 'ts', 'js:esm', 'js:cjs'`)
+  .option("--format <format>", `Format to use for output; options are 'ts' (default), 'js:esm', 'js:cjs'`)
   .option("-g, --ignore-generics", `Ignores generics`)
   .option("-i, --ignore-index-signature", `Ignores index signature`)
   .option("--inline-imports", `Traverses the full import tree and inlines all types into output`)
