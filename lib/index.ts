@@ -5,6 +5,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as ts from "typescript";
 
+// Default format to use for `format` option
+const defaultFormat = "ts"
 // Default suffix appended to generated files. Abbreviation for "ts-interface".
 const defaultSuffix = "-ti";
 // Default header prepended to the generated module.
@@ -16,6 +18,7 @@ const defaultHeader =
 const ignoreNode = "";
 
 export interface ICompilerOptions {
+  format?: "ts" | "js:esm" | "js:cjs"
   ignoreGenerics?: boolean;
   ignoreIndexSignature?: boolean;
   inlineImports?: boolean;
@@ -25,7 +28,7 @@ export interface ICompilerOptions {
 export class Compiler {
   public static compile(
       filePath: string,
-      options: ICompilerOptions = {ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false},
+      options: ICompilerOptions = {},
     ): string {
     const createProgramOptions = {target: ts.ScriptTarget.Latest, module: ts.ModuleKind.CommonJS};
     const program = ts.createProgram([filePath], createProgramOptions);
@@ -34,6 +37,7 @@ export class Compiler {
     if (!topNode) {
       throw new Error(`Can't process ${filePath}: ${collectDiagnostics(program)}`);
     }
+    options = {format: defaultFormat, ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false, ...options}
     return new Compiler(checker, options, topNode).compileNode(topNode);
   }
 
@@ -179,7 +183,7 @@ export class Compiler {
     const members: string[] = node.members.map(m =>
       `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
     this.exportedNames.push(name);
-    return `export const ${name} = t.enumtype({\n${members.join("")}});`;
+    return this._formatExport(name, `t.enumtype({\n${members.join("")}})`);
   }
   private _compileInterfaceDeclaration(node: ts.InterfaceDeclaration): string {
     const name = this.getName(node.name);
@@ -194,7 +198,7 @@ export class Compiler {
       }
     }
     this.exportedNames.push(name);
-    return `export const ${name} = t.iface([${extend.join(", ")}], {\n${members.join("")}});`;
+    return this._formatExport(name, `t.iface([${extend.join(", ")}], {\n${members.join("")}})`)
   }
   private _compileTypeAliasDeclaration(node: ts.TypeAliasDeclaration): string {
     const name = this.getName(node.name);
@@ -202,7 +206,7 @@ export class Compiler {
     const compiled = this.compileNode(node.type);
     // Turn string literals into explicit `name` nodes, as expected by ITypeSuite.
     const fullType = compiled.startsWith('"') ? `t.name(${compiled})` : compiled;
-    return `export const ${name} = ${fullType};`;
+    return this._formatExport(name, fullType)
   }
   private _compileExpressionWithTypeArguments(node: ts.ExpressionWithTypeArguments): string {
     return this.compileNode(node.expression);
@@ -231,11 +235,18 @@ export class Compiler {
       return this._compileSourceFileStatements(node);
     }
     // wrap the top node with a default export
+    if (this.options.format === "js:cjs") {
+      return `const t = require("ts-interface-checker");\n\n` +
+        "module.exports = {\n" +
+        this._compileSourceFileStatements(node) + "\n" +
+        "};\n"
+    }
     const prefix = `import * as t from "ts-interface-checker";\n` +
-                   "// tslint:disable:object-literal-key-quotes\n\n";
+                   (this.options.format === "ts" ? "// tslint:disable:object-literal-key-quotes\n" : "") +
+                   "\n";
     return prefix +
       this._compileSourceFileStatements(node) + "\n\n" +
-      "const exportedTypeSuite: t.ITypeSuite = {\n" +
+      "const exportedTypeSuite" + (this.options.format === "ts" ? ": t.ITypeSuite" : "") + " = {\n" +
       this.exportedNames.map((n) => `  ${n},\n`).join("") +
       "};\n" +
       "export default exportedTypeSuite;\n";
@@ -247,6 +258,11 @@ export class Compiler {
 
     throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
       node.getText());
+  }
+  private _formatExport(name: string, expression: string): string {
+    return this.options.format === "js:cjs"
+        ? `  ${name}: ${this.indent(expression)},`
+        : `export const ${name} = ${expression};`;
   }
 }
 
@@ -272,6 +288,7 @@ export function main() {
   commander
   .description("Create runtime validator module from TypeScript interfaces")
   .usage("[options] <typescript-file...>")
+  .option("--format <format>", `Format to use for output; options are 'ts' (default), 'js:esm', 'js:cjs'`)
   .option("-g, --ignore-generics", `Ignores generics`)
   .option("-i, --ignore-index-signature", `Ignores index signature`)
   .option("--inline-imports", `Traverses the full import tree and inlines all types into output`)
@@ -285,6 +302,7 @@ export function main() {
   const suffix: string = commander.suffix;
   const outDir: string|undefined = commander.outDir;
   const options: ICompilerOptions = {
+    format: commander.format || defaultFormat,
     ignoreGenerics: commander.ignoreGenerics,
     ignoreIndexSignature: commander.ignoreIndexSignature,
     inlineImports: commander.inlineImports,
@@ -300,7 +318,7 @@ export function main() {
     // Read and parse the source file.
     const ext = path.extname(filePath);
     const dir = outDir || path.dirname(filePath);
-    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
+    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + (options.format === "ts" ? ".ts" : ".js"));
     if (verbose) {
       console.log(`Compiling ${filePath} -> ${outPath}`);
     }

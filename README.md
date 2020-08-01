@@ -21,7 +21,7 @@ npm install --save ts-interface-checker
 
 This module works together with [ts-interface-checker](https://github.com/gristlabs/ts-interface-checker) module. You use
 `ts-interface-builder` in a build step that converts some TypeScript interfaces
-to a new TypeScript file (with `-ti.ts` extension) that provides a runtime
+to a new TypeScript or JavaScript file (with `-ti.ts` or `-ti.js` extension) that provides a runtime
 description of the interface. You then use `ts-interface-checker` in your
 program to create validator functions from this runtime description.
 
@@ -48,7 +48,7 @@ Then you can generate code for runtime checks with:
 
 It produces a file like this:
 ```typescript
-// foo-ti.js
+// foo-ti.ts
 import * as t from "ts-interface-checker";
 
 export const Square = t.iface([], {
@@ -56,7 +56,10 @@ export const Square = t.iface([], {
   "color": t.opt("string"),
 });
 
-export default ...;
+const exportedTypeSuite: t.ITypeSuite = {
+  Square,
+};
+export default exportedTypeSuite;
 ```
 
 See [ts-interface-checker](https://github.com/gristlabs/ts-interface-checker) module for how to use this file in your program.

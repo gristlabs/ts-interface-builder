@@ -56,4 +56,18 @@ describe("ts-interface-builder", () => {
     const expected = await readFile(join(fixtures, "imports-parent-shallow-ti.ts"), { encoding: "utf8" });
     assert.deepEqual(output, expected);
   });
+
+  it("should compile to JS in esm module format", async () => {
+    const output = await Compiler.compile(join(fixtures, "to-javascript.ts"),
+        {format: 'js:esm'});
+    const expected = await readFile(join(fixtures, "to-javascript-ti.esm.js"), {encoding: "utf8"});
+    assert.equal(output, expected);
+  });
+
+  it("should compile to JS in cjs module format", async () => {
+    const output = await Compiler.compile(join(fixtures, "to-javascript.ts"),
+        {format: 'js:cjs'});
+    const expected = await readFile(join(fixtures, "to-javascript-ti.cjs.js"), {encoding: "utf8"});
+    assert.equal(output, expected);
+  });
 });
