@@ -25,27 +25,19 @@ describe("ts-interface-builder/macro", () => {
     it("error evaluating arguments", async function () {
         const file = join(fixtures, "macro-error-evaluating-arguments.ts");
         const tsOutput = tsCompile(await readFile(file, {encoding: "utf8"}));
-        const error = getError(() => babelCompile(tsOutput, file));
-        assert(error!.name, "MacroError");
-        const messageParts = error!.message.split(": ");
-        assert.equal(messageParts[0], file);
-        assert.equal(
-            messageParts.slice(1).join(": "),
-            "ts-interface-builder/macro: Unable to evaluate 1st argument to 1st call to makeCheckers()",
-        )
+        assert.throws(() => babelCompile(tsOutput, file), {
+            name: "MacroError",
+            message: `${file}: ts-interface-builder/macro: Unable to evaluate 1st argument to 1st call to makeCheckers()`,
+        } as any);
     });
     it("error compiling", async function () {
         this.timeout(5000)
         const file = join(fixtures, "macro-error-compiling.ts");
         const tsOutput = tsCompile(await readFile(file, {encoding: "utf8"}));
-        const error = getError(() => babelCompile(tsOutput, file));
-        assert(error!.name, "MacroError");
-        const messageParts = error!.message.split(": ");
-        assert.equal(messageParts[0], file);
-        assert.equal(
-            messageParts.slice(1).join(": "),
-            "ts-interface-builder/macro: Error: Node IndexSignature not supported by ts-interface-builder: [extra: string]: any;",
-        );
+        assert.throws(() => babelCompile(tsOutput, file), {
+          name: "MacroError",
+          message: `${file}: ts-interface-builder/macro: Error: Node IndexSignature not supported by ts-interface-builder: [extra: string]: any;`,
+        } as any);
     });
 });
 
@@ -69,14 +61,4 @@ function babelCompile (code: string, filename: string): string {
         // Note: Type definitions for @babel/core's TransformOptions.inputSourceMap is wrong; see https://babeljs.io/docs/en/options#source-map-options
         inputSourceMap: true as any,
     })!.code!;
-}
-
-function getError(cb: () => any): Error {
-    let error: Error | undefined;
-    try { cb(); }
-    catch (e) { error = e; }
-    if (!error) {
-        throw new Error("Expected error, but no error was thrown");
-    }
-    return error!;
 }
