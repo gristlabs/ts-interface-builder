@@ -43,7 +43,6 @@
     "macro.d.ts"
   ],
   "dependencies": {
-    "babel-plugin-macros": "^2.8.0",
     "commander": "^2.12.2",
     "fs-extra": "^4.0.3",
     "typescript": "^3.0.0"
@@ -54,6 +53,7 @@
     "@types/fs-extra": "^4.0.5",
     "@types/mocha": "^5.2.7",
     "@types/node": "^8.0.57",
+    "babel-plugin-macros": "^2.8.0",
     "fs-extra": "^4.0.3",
     "mocha": "^6.2.0",
     "ts-interface-checker": "^0.1.12",
