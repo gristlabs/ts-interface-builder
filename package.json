@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "tsc && mocha 'test/*.ts'",
+    "test-only": "mocha 'test/*.ts'",
+    "test": "npm run build && npm run test-only",
     "prepack": "npm run test"
   },
   "keywords": [
