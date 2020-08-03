@@ -5,7 +5,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as ts from "typescript";
 import {createMacro, MacroError, MacroHandler, Options as MacroOptions} from "babel-plugin-macros";
-import {ordinal} from "./util/ordinal";
 
 // Default format to use for `format` option
 const defaultFormat = "ts"
@@ -377,7 +376,7 @@ const macroHandler: MacroHandler = params => {
     try {
       compiled = Compiler.compile(file, options);
     } catch (error) {
-      throw macroError(`${error.name}: ${error.message}`)
+      throw macroError(callIndex, `${error.name}: ${error.message}`)
     }
 
     // Get the compiled type suite as AST node
@@ -421,19 +420,19 @@ const macroHandler: MacroHandler = params => {
          * Maybe babel-plugin-macros doesn't support "input -> TS -> babel -> output" pipeline?
          * Or maybe I'm doing that pipeline wrong?
          */
-        throw macroError(`Unable to evaluate ${ordinal(argIndex + 1)} argument to ${ordinal(callIndex + 1)} call to makeCheckers()`)
+        throw macroError(callIndex, `Unable to evaluate argument ${argIndex + 1}`)
       }
       return value
     }
   }
 }
 
-function macroError(message: string): MacroError {
-  return new MacroError(`ts-interface-builder/macro: ${message}`)
+function macroError(callIndex: number, message: string): MacroError {
+  return new MacroError(`ts-interface-builder/macro: makeCheckers call ${callIndex + 1}: ${message}`)
 }
 
 function macroInternalError(message?: string): MacroError {
-  return macroError(`Internal Error: ${message || 'Check stack trace'}`)
+  return new MacroError(`ts-interface-builder/macro: Internal Error: ${message || 'Check stack trace'}`)
 }
 
 const macroParams: MacroOptions = { configName: "ts-interface-builder" };

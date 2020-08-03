@@ -27,7 +27,7 @@ describe("ts-interface-builder/macro", () => {
         const tsOutput = tsCompile(await readFile(file, {encoding: "utf8"}));
         assert.throws(() => babelCompile(tsOutput, file), {
             name: "MacroError",
-            message: `${file}: ts-interface-builder/macro: Unable to evaluate 1st argument to 1st call to makeCheckers()`,
+            message: `${file}: ts-interface-builder/macro: makeCheckers call 1: Unable to evaluate argument 1`,
         } as any);
     });
     it("error compiling", async function () {
@@ -36,7 +36,7 @@ describe("ts-interface-builder/macro", () => {
         const tsOutput = tsCompile(await readFile(file, {encoding: "utf8"}));
         assert.throws(() => babelCompile(tsOutput, file), {
           name: "MacroError",
-          message: `${file}: ts-interface-builder/macro: Error: Node IndexSignature not supported by ts-interface-builder: [extra: string]: any;`,
+          message: `${file}: ts-interface-builder/macro: makeCheckers call 1: Error: Node IndexSignature not supported by ts-interface-builder: [extra: string]: any;`,
         } as any);
     });
 });
