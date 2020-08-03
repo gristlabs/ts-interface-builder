@@ -281,6 +281,17 @@ function collectDiagnostics(program: ts.Program) {
   });
 }
 
+function checkUpdate(src: string, out: string): boolean {
+  if (!fs.existsSync(out)) {
+    return true;
+  }
+
+  const lastBuildTime = fs.statSync(out).mtime;
+  const lastCodeTime = fs.statSync(src).mtime;
+
+  return lastBuildTime < lastCodeTime;
+}
+
 /**
  * Main entry point when used from the command line.
  */
@@ -319,10 +330,12 @@ export function main() {
     const ext = path.extname(filePath);
     const dir = outDir || path.dirname(filePath);
     const outPath = path.join(dir, path.basename(filePath, ext) + suffix + (options.format === "ts" ? ".ts" : ".js"));
-    if (verbose) {
-      console.log(`Compiling ${filePath} -> ${outPath}`);
+    if (checkUpdate(filePath, outPath)) {
+      if (verbose) {
+        console.log(`Compiling ${filePath} -> ${outPath}`);
+      }
+      const generatedCode = defaultHeader + Compiler.compile(filePath, options);
+      fs.writeFileSync(outPath, generatedCode);
     }
-    const generatedCode = defaultHeader + Compiler.compile(filePath, options);
-    fs.writeFileSync(outPath, generatedCode);
   }
 }
