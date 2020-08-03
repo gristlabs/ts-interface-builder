@@ -1,141 +1,132 @@
+// @ts-ignore
 import * as path from "path";
-import { MacroHandler, MacroError, createMacro } from "babel-plugin-macros";
-import { Compiler, ICompilerOptions } from "./index";
+import { createMacro, MacroHandler } from "babel-plugin-macros";
+import { NodePath, types } from "@babel/core"; // typescript types ONLY
+import { ICompilerOptions } from "./index";
+import { getCallPaths } from "./macro/getCallPaths";
+import { RequirementRegistry } from "./macro/RequirementRegistry";
+import { getGetArgValue } from "./macro/getGetArgValue";
+import { compileTypeSuite, ICompilerArgs } from "./macro/compileTypeSuite";
+import { macroInternalError } from "./macro/errors";
 
+const tsInterfaceCheckerIdentifier = "t";
+const onceIdentifier = "once";
+
+/**
+ * This function is called for each file that imports the macro module.
+ * `params.references` is an object where each key is the name of a variable imported from the macro module,
+ * and each value is an array of references to that that variable.
+ * Said references come in the form of Babel `NodePath`s,
+ * which have AST (Abstract Syntax Tree) data and methods for manipulating it.
+ * For more info: https://github.com/kentcdodds/babel-plugin-macros/blob/master/other/docs/author.md#function-api
+ */
 const macroHandler: MacroHandler = (params) => {
-  const callPaths = params.references["makeCheckers"];
-
-  // Bail out if no calls in this file
-  if (!callPaths || !callPaths.length) {
+  const { references, babel, state } = params;
+  const callPaths = getCallPaths(references);
+  const somePath = callPaths.getTypeSuite[0] || callPaths.getCheckers[0];
+  if (!somePath) {
     return;
   }
+  const programPath = somePath.findParent((path) => path.isProgram());
 
-  const {
-    babel,
-    state: { filename },
-  } = params;
+  const registry = new RequirementRegistry();
+  const toReplace = [
+    ...callPaths.getTypeSuite.map((callPath, index) => {
+      const compilerArgs = getCompilerArgs(callPath, "getTypeSuite", index);
+      const typeSuiteId = registry.requireTypeSuite(compilerArgs);
+      return { callPath, id: typeSuiteId };
+    }),
+    ...callPaths.getCheckers.map((callPath, index) => {
+      const compilerArgs = getCompilerArgs(callPath, "getCheckers", index);
+      const checkerSuiteId = registry.requireCheckerSuite(compilerArgs);
+      return { callPath, id: checkerSuiteId };
+    }),
+  ];
 
-  // Rename any bindings to `t` in any parent scope of any call
-  for (const callPath of callPaths) {
-    let scope = callPath.scope;
-    while (true) {
-      if (scope.hasBinding("t")) {
-        scope.rename("t");
-      }
-      if (!scope.parent || scope.parent === scope) {
-        break;
-      }
-      scope = scope.parent;
-    }
-  }
+  // Begin mutations
 
-  // Add `import * as t from 'ts-interface-checker'` statement
-  const firstStatementPath = callPaths[0]
-    .findParent((path) => path.isProgram())
-    .get("body.0") as babel.NodePath;
-  firstStatementPath.insertBefore(
-    babel.types.importDeclaration(
-      [babel.types.importNamespaceSpecifier(babel.types.identifier("t"))],
-      babel.types.stringLiteral("ts-interface-checker")
-    )
-  );
-
-  // Get the user config passed to us by babel-plugin-macros, for use as default options
-  // Note: `config` property is missing in `babelPluginMacros.MacroParams` type definition
-  const defaultOptions = ((params as any).config || {}) as ICompilerOptions;
-
-  callPaths.forEach(({ parentPath }, callIndex) => {
-    // Determine compiler parameters
-    const getArgValue = getGetArgValue(callIndex, parentPath);
-    const file = path.resolve(
-      filename,
-      "..",
-      getArgValue(0) || path.basename(filename)
-    );
-    const options = {
-      ...defaultOptions,
-      ...(getArgValue(1) || {}),
-      format: "js:cjs",
-    };
-
-    // Compile
-    let compiled: string | undefined;
-    try {
-      compiled = Compiler.compile(file, options);
-    } catch (error) {
-      throw macroError(callIndex, `${error.name}: ${error.message}`);
-    }
-
-    // Get the compiled type suite as AST node
-    const parsed = parse(compiled)!;
-    if (parsed.type !== "File") throw macroInternalError();
-    if (parsed.program.body[1].type !== "ExpressionStatement")
-      throw macroInternalError();
-    if (parsed.program.body[1].expression.type !== "AssignmentExpression")
-      throw macroInternalError();
-    const typeSuiteNode = parsed.program.body[1].expression.right;
-
-    // Build checker suite expression using type suite
-    const checkerSuiteNode = babel.types.callExpression(
-      babel.types.memberExpression(
-        babel.types.identifier("t"),
-        babel.types.identifier("createCheckers")
-      ),
-      [typeSuiteNode]
-    );
-
-    // Replace call with checker suite expression
-    parentPath.replaceWith(checkerSuiteNode);
+  programPath.scope.rename(tsInterfaceCheckerIdentifier);
+  programPath.scope.rename(onceIdentifier);
+  toReplace.forEach(({ callPath, id }) => {
+    scopeRenameRecursive(callPath.scope, id);
   });
 
-  function parse(code: string) {
-    return babel.parse(code, { configFile: false });
+  const toPrepend = `
+    import * as ${tsInterfaceCheckerIdentifier} from "ts-interface-checker";
+    function ${onceIdentifier}(fn) {
+      var result;
+      return function () {
+        return result || (result = fn());
+      };
+    }
+    ${registry.typeSuites
+      .map(
+        ({ compilerArgs, id }) => `
+          var ${id} = ${onceIdentifier}(function(){
+            return ${compileTypeSuite(compilerArgs)}
+          });
+        `
+      )
+      .join("")}
+    ${registry.checkerSuites
+      .map(
+        ({ typeSuiteId, id }) => `
+          var ${id} = ${onceIdentifier}(function(){
+            return ${tsInterfaceCheckerIdentifier}.createCheckers(${typeSuiteId}());
+          });
+        `
+      )
+      .join("")}
+  `;
+  parseStatements(toPrepend).reverse().forEach(prependProgramStatement);
+
+  const { identifier, callExpression } = babel.types;
+  toReplace.forEach(({ callPath, id }) => {
+    callPath.replaceWith(callExpression(identifier(id), []));
+  });
+
+  // Done mutations (only helper functions below)
+
+  function getCompilerArgs(
+    callPath: NodePath<types.CallExpression>,
+    functionName: string,
+    callIndex: number
+  ): ICompilerArgs {
+    const callDescription = `${functionName} call ${callIndex + 1}`;
+    const getArgValue = getGetArgValue(callPath, callDescription);
+
+    const basename = getArgValue(0) || path.basename(state.filename);
+    const file = path.resolve(state.filename, "..", basename);
+
+    // Get the user config passed to us by babel-plugin-macros, for use as default options
+    // Note: `config` property is missing in `babelPluginMacros.MacroParams` type definition
+    const defaultOptions = (params as any).config;
+    const options = {
+      ...(defaultOptions || {}),
+      ...(getArgValue(1) || {}),
+      format: "js:cjs",
+    } as ICompilerOptions;
+
+    return [file, options];
   }
 
-  function getGetArgValue(
-    callIndex: number,
-    callExpressionPath: babel.NodePath
-  ) {
-    const argPaths = callExpressionPath.get("arguments");
-    if (!Array.isArray(argPaths)) throw macroInternalError();
-    return (argIndex: number): any => {
-      const argPath = argPaths[argIndex];
-      if (!argPath) {
-        return null;
-      }
-      const { confident, value } = argPath.evaluate();
-      if (!confident) {
-        /**
-         * TODO: Could not get following line to work:
-         * const lineSuffix = argPath.node.loc ? ` on line ${argPath.node.loc.start.line}` : ""
-         * Line number displayed is for the intermediary js produced by typescript.
-         * Even with `inputSourceMap: true`, Babel doesn't seem to parse inline sourcemaps in input.
-         * Maybe babel-plugin-macros doesn't support "input -> TS -> babel -> output" pipeline?
-         * Or maybe I'm doing that pipeline wrong?
-         */
-        throw macroError(
-          callIndex,
-          `Unable to evaluate argument ${argIndex + 1}`
-        );
-      }
-      return value;
-    };
+  function scopeRenameRecursive(scope: NodePath["scope"], oldName: string) {
+    scope.rename(oldName);
+    if (scope.parent) {
+      scopeRenameRecursive(scope.parent, oldName);
+    }
+  }
+
+  function parseStatements(code: string) {
+    const parsed = babel.parse(code, { configFile: false });
+    if (!parsed || parsed.type !== "File") throw macroInternalError();
+    return parsed.program.body;
+  }
+
+  function prependProgramStatement(statement: types.Statement) {
+    (programPath.get("body.0") as NodePath).insertBefore(statement);
   }
 };
-
-function macroError(callIndex: number, message: string): MacroError {
-  return new MacroError(
-    `ts-interface-builder/macro: makeCheckers call ${callIndex + 1}: ${message}`
-  );
-}
-
-function macroInternalError(message?: string): MacroError {
-  return new MacroError(
-    `ts-interface-builder/macro: Internal Error: ${
-      message || "Check stack trace"
-    }`
-  );
-}
 
 const macroParams = { configName: "ts-interface-builder" };
 

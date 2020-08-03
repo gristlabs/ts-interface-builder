@@ -1,3 +1,5 @@
 import { getCheckers } from "../../macro";
 
-getCheckers("./ignore-index-signature.ts");
+const foo = getCheckers;
+
+foo("foo.ts");

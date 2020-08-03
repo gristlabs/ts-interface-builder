@@ -1,19 +1,24 @@
-import {makeCheckers} from "../../macro";
+import { getTypeSuite, getCheckers } from "../../macro";
 
+export const t = null;
+export const once = null;
+
+// @ts-ignore-rule
 interface LocalInterface {
+  // does not need to be exported
   foo: number;
 }
 
-export function checkLocalInterface(input: any): LocalInterface {
-  // shows that t is renamed
-  const t = makeCheckers(undefined, {inlineImports: false});
-  t.LocalInterface.check(input);
-  return input as LocalInterface;
+export const typeSuite0 = getTypeSuite(undefined, { inlineImports: false });
+
+export function getTypeSuite0() {
+  const typeSuite0 = getTypeSuite(undefined, { inlineImports: false });
+  return typeSuite0;
 }
 
-function t(t: any) {
-  // shows function t is renamed and argument t is not
-  return t;
-}
+export const checkerSuite0 = getCheckers(undefined, { inlineImports: false });
 
-void t
+export function getCheckerSuite0() {
+  const checkerSuite0 = getCheckers(undefined, { inlineImports: false });
+  return checkerSuite0;
+}

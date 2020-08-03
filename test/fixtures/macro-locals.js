@@ -1,20 +1,41 @@
 import * as t from "ts-interface-checker";
-export function checkLocalInterface(input) {
-  // shows that t is renamed
-  var _t = t.createCheckers({
+
+function once(fn) {
+  var result;
+  return function () {
+    return result || (result = fn());
+  };
+}
+
+var typeSuite0 = once(function () {
+  return {
     LocalInterface: t.iface([], {
       "foo": "number"
     })
-  });
+  };
+});
+var checkerSuite0 = once(function () {
+  return t.createCheckers(typeSuite0());
+});
+var _t = null;
+export { _t as t };
+var _once = null;
+export { _once as once };
 
-  _t.LocalInterface.check(input);
+var _typeSuite = typeSuite0();
 
-  return input;
+export { _typeSuite as typeSuite0 };
+export function getTypeSuite0() {
+  var _typeSuite2 = typeSuite0();
+
+  return _typeSuite2;
 }
 
-function _t2(t) {
-  // shows function t is renamed and argument t is not
-  return t;
-}
+var _checkerSuite = checkerSuite0();
 
-void _t2;
+export { _checkerSuite as checkerSuite0 };
+export function getCheckerSuite0() {
+  var _checkerSuite2 = checkerSuite0();
+
+  return _checkerSuite2;
+}

@@ -1,4 +1,4 @@
-import {join} from "path"
-import {makeCheckers} from "../../macro";
+import { join } from "path";
+import { getCheckers } from "../../macro";
 
-makeCheckers(join(__dirname, 'foo.ts'));
+getCheckers(join(__dirname, "foo.ts"));
