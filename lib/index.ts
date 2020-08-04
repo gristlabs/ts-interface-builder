@@ -281,13 +281,13 @@ function collectDiagnostics(program: ts.Program) {
   });
 }
 
-function checkUpdate(src: string, out: string): boolean {
-  if (!fs.existsSync(out)) {
+function needsUpdate(srcPath: string, outPath: string): boolean {
+  if (!fs.existsSync(outPath)) {
     return true;
   }
 
-  const lastBuildTime = fs.statSync(out).mtime;
-  const lastCodeTime = fs.statSync(src).mtime;
+  const lastBuildTime = fs.statSync(outPath).mtime;
+  const lastCodeTime = fs.statSync(srcPath).mtime;
 
   return lastBuildTime < lastCodeTime;
 }
@@ -306,10 +306,12 @@ export function main() {
   .option("-s, --suffix <suffix>", `Suffix to append to generated files (default ${defaultSuffix})`, defaultSuffix)
   .option("-o, --outDir <path>", `Directory for output files; same as source file if omitted`)
   .option("-v, --verbose", "Produce verbose output")
+  .option("-c, --changed-only", "Skip the build if the output file exists with a newer timestamp")
   .parse(process.argv);
 
   const files: string[] = commander.args;
   const verbose: boolean = commander.verbose;
+  const changedOnly: boolean = commander.changedOnly;
   const suffix: string = commander.suffix;
   const outDir: string|undefined = commander.outDir;
   const options: ICompilerOptions = {
@@ -330,12 +332,18 @@ export function main() {
     const ext = path.extname(filePath);
     const dir = outDir || path.dirname(filePath);
     const outPath = path.join(dir, path.basename(filePath, ext) + suffix + (options.format === "ts" ? ".ts" : ".js"));
-    if (checkUpdate(filePath, outPath)) {
+
+    if (changedOnly && !needsUpdate(filePath, outPath)) {
       if (verbose) {
-        console.log(`Compiling ${filePath} -> ${outPath}`);
+        console.log(`Skipping ${filePath} because ${outPath} is newer`);
       }
-      const generatedCode = defaultHeader + Compiler.compile(filePath, options);
-      fs.writeFileSync(outPath, generatedCode);
+      continue;
     }
+
+    if (verbose) {
+      console.log(`Compiling ${filePath} -> ${outPath}`);
+    }
+    const generatedCode = defaultHeader + Compiler.compile(filePath, options);
+    fs.writeFileSync(outPath, generatedCode);
   }
 }
