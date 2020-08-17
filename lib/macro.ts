@@ -13,12 +13,15 @@ const tsInterfaceCheckerIdentifier = "t";
 const onceIdentifier = "once";
 
 /**
- * This function is called for each file that imports the macro module.
+ * This macro handler is called for each file that imports the macro module.
  * `params.references` is an object where each key is the name of a variable imported from the macro module,
  * and each value is an array of references to that that variable.
  * Said references come in the form of Babel `NodePath`s,
  * which have AST (Abstract Syntax Tree) data and methods for manipulating it.
  * For more info: https://github.com/kentcdodds/babel-plugin-macros/blob/master/other/docs/author.md#function-api
+ *
+ * This macro handler needs to replace each call to `getTypeSuite` or `getCheckers`
+ * with the code that fulfills that function's behavior as documented in `macro.d.ts` (in root of repo).
  */
 const macroHandler: MacroHandler = (params) => {
   const { references, babel, state } = params;
