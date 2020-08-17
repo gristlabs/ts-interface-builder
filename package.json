@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "tsc && mocha 'test/*.ts'",
+    "test-only": "mocha 'test/*.ts'",
+    "test": "npm run build && npm run test-only",
     "prepack": "npm run test"
   },
   "keywords": [
@@ -20,9 +21,13 @@
     "type",
     "validate",
     "validator",
-    "check"
+    "check",
+    "babel-plugin-macros"
   ],
   "author": "Dmitry S, Grist Labs",
+  "contributors": [
+    "Matthew Francis Brunetti <zenflow87@gmail.com> (https://github.com/zenflow)"
+  ],
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -33,7 +38,9 @@
   },
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "macro.js",
+    "macro.d.ts"
   ],
   "dependencies": {
     "commander": "^2.12.2",
@@ -41,11 +48,15 @@
     "typescript": "^3.0.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.10.5",
+    "@types/babel-plugin-macros": "^2.8.2",
     "@types/fs-extra": "^4.0.5",
     "@types/mocha": "^5.2.7",
     "@types/node": "^8.0.57",
+    "babel-plugin-macros": "^2.8.0",
     "fs-extra": "^4.0.3",
     "mocha": "^6.2.0",
+    "ts-interface-checker": "^0.1.12",
     "ts-node": "^4.0.1"
   }
 }
