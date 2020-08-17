@@ -66,7 +66,7 @@ const macroHandler: MacroHandler = (params) => {
       .map(
         ({ compilerArgs, id }) => `
           var ${id} = ${onceIdentifier}(function(){
-            return ${compileTypeSuite(compilerArgs)}
+            return ${compileTypeSuite(compilerArgs)};
           });
         `
       )

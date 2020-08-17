@@ -15,10 +15,14 @@ export function compileTypeSuite(args: ICompilerArgs): string {
   }
   const exportStatement = compiled.split("\n").slice(2).join("\n");
   const prefix = "module.exports = ";
-  if (exportStatement.substr(0, prefix.length) !== prefix) {
+  const postfix = ";\n";
+  if (
+    !exportStatement.startsWith(prefix) ||
+    !exportStatement.endsWith(postfix)
+  ) {
     throw macroInternalError(
       `Unexpected output format from Compiler (${context})`
     );
   }
-  return exportStatement.substr(prefix.length);
+  return exportStatement.slice(prefix.length, -postfix.length);
 }
