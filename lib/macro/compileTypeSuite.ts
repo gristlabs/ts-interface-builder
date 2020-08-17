@@ -13,6 +13,13 @@ export function compileTypeSuite(args: ICompilerArgs): string {
   } catch (error) {
     throw macroError(`Error ${context}: ${error.name}: ${error.message}`);
   }
+  /*
+    Here we have `compiled` in "js:cjs" format.
+    From this string we need to extract the type suite expression that is exported.
+    The format is expected to have only two statements:
+    1. a cjs-style import statement which defines `t`, e.g. `const t = require("ts-interface-checker")`
+    2. beginning on 3rd line, a cjs-style export statement that starts with `module.exports = ` and ends with `;\n`
+  */
   const exportStatement = compiled.split("\n").slice(2).join("\n");
   const prefix = "module.exports = ";
   const postfix = ";\n";
