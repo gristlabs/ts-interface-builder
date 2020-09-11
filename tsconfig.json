@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "strict": true,
+    "target": "es2018",
+    "strict": false,
     "noUnusedLocals": true,
     "module": "commonjs",
     "baseUrl": ".",
