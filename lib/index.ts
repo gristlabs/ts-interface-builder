@@ -82,11 +82,7 @@ export class Compiler {
       case ts.SyntaxKind.ImportDeclaration:
         return this._compileImportDeclaration(node as ts.ImportDeclaration);
       case ts.SyntaxKind.ModuleDeclaration:
-        const body: ts.ModuleBody = node["body"];
-        if ("statements" in body) {
-          return body.statements.map(this.compileNode, this).filter(s => s).join("\n\n");
-        }
-        //return this._compileNamespaceDeclaration(node as ts.NamespaceDeclaration);
+        return this._compileNamespaceDeclaration(node as ts.NamespaceDeclaration);
       case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
       case ts.SyntaxKind.AnyKeyword: return '"any"';
       case ts.SyntaxKind.NumberKeyword: return '"number"';
@@ -198,6 +194,7 @@ export class Compiler {
     let counter = 0;
     const members: string[] = node.members.map(m => {
       let value = getTextOfConstantValue(this.checker.getConstantValue(m));
+      //for some strange reason enum members inside namespaces are undefined
       if (value === "undefined") {
         value = counter.toString(10);
         ++counter;
@@ -236,13 +233,13 @@ export class Compiler {
   private _compileParenthesizedTypeNode(node: ts.ParenthesizedTypeNode): string {
     return this.compileNode(node.type);
   }
-  // private _compileNamespaceDeclaration(node: ts.NamespaceDeclaration): string {
-  //   if ("statements" in node.body) {
-  //     const name = this.getName(node.name);
-  //     const prefix = node.modifiers.map(n => n.getText()).filter(s => s).join(" ");
-  //     return `${prefix} ${name} {\n${this._compileSourceFileStatements(node.body.statements)}\n}\n`;
-  //   }
-  // }
+  private _compileNamespaceDeclaration(node: ts.NamespaceDeclaration): string {
+    if ("statements" in node.body) {
+      return node.body.statements.map(this.compileNode, this).filter(s => s).join("\n\n");
+    }
+    console.log("Namespace or module can`t be parsed:", node.getText());
+    return "";
+  }
   private _compileImportDeclaration(node: ts.ImportDeclaration): string {
     if (this.options.inlineImports) {
       const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
@@ -256,7 +253,6 @@ export class Compiler {
     return '';
   }
   private _compileSourceFileStatements(statements: ts.NodeArray<ts.Statement>): string {
-    
     return statements.map(this.compileNode, this).filter((s) => s).join("\n\n");
   }
   private _compileSourceFile(node: ts.SourceFile): string {
