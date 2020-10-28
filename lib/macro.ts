@@ -30,7 +30,7 @@ const macroHandler: MacroHandler = (params) => {
   if (!somePath) {
     return;
   }
-  const programPath = somePath.findParent((path) => path.isProgram());
+  const programPath = somePath.findParent((path) => path.isProgram())!;
 
   const registry = new RequirementRegistry();
   const toReplace = [
