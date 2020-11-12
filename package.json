@@ -1,62 +1,64 @@
 {
-  "name": "ts-interface-builder",
-  "version": "0.2.2",
-  "description": "Compile TypeScript interfaces into a description that allows runtime validation",
-  "main": "dist/index",
-  "typings": "dist/index",
-  "bin": {
-    "ts-interface-builder": "bin/ts-interface-builder"
-  },
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test-only": "mocha 'test/*.ts'",
-    "test": "npm run build && npm run test-only",
-    "prepack": "npm run test"
-  },
-  "keywords": [
-    "typescript",
-    "ts",
-    "interface",
-    "type",
-    "validate",
-    "validator",
-    "check",
-    "babel-plugin-macros"
-  ],
-  "author": "Dmitry S, Grist Labs",
-  "contributors": [
-    "Matthew Francis Brunetti <zenflow87@gmail.com> (https://github.com/zenflow)"
-  ],
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/gristlabs/ts-interface-builder"
-  },
-  "bugs": {
-    "url": "https://github.com/gristlabs/ts-interface-builder/issues"
-  },
-  "files": [
-    "dist",
-    "bin",
-    "macro.js",
-    "macro.d.ts"
-  ],
-  "dependencies": {
-    "commander": "^2.12.2",
-    "fs-extra": "^4.0.3",
-    "typescript": "^3.0.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.10.5",
-    "@types/babel-plugin-macros": "^2.8.2",
-    "@types/fs-extra": "^4.0.5",
-    "@types/mocha": "^5.2.7",
-    "@types/node": "^8.0.57",
-    "babel-plugin-macros": "^2.8.0",
-    "fs-extra": "^4.0.3",
-    "mocha": "^6.2.0",
-    "ts-interface-checker": "^0.1.12",
-    "ts-node": "^4.0.1"
-  }
+    "name": "ts-interface-builder",
+    "version": "0.2.2",
+    "description": "Compile TypeScript interfaces into a description that allows runtime validation",
+    "main": "dist/index",
+    "typings": "dist/index",
+    "bin": {
+        "ts-interface-builder": "bin/ts-interface-builder"
+    },
+    "scripts": {
+        "build": "tsc",
+        "watch": "tsc -w",
+        "test-only": "mocha 'test/*.ts'",
+        "test": "npm run build && npm run test-only",
+        "prepack": "npm run test"
+    },
+    "keywords": [
+        "typescript",
+        "ts",
+        "interface",
+        "type",
+        "validate",
+        "validator",
+        "check",
+        "babel-plugin-macros"
+    ],
+    "author": "Dmitry S, Grist Labs",
+    "contributors": [
+        "Matthew Francis Brunetti <zenflow87@gmail.com> (https://github.com/zenflow)"
+    ],
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gristlabs/ts-interface-builder"
+    },
+    "bugs": {
+        "url": "https://github.com/gristlabs/ts-interface-builder/issues"
+    },
+    "files": [
+        "dist",
+        "bin",
+        "macro.js",
+        "macro.d.ts"
+    ],
+    "dependencies": {
+        "commander": "^2.12.2",
+        "fs-extra": "^4.0.3",
+        "typescript": "^3.0.0",
+        "glob": "^7.1.6"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.10.5",
+        "@types/babel-plugin-macros": "^2.8.2",
+        "@types/fs-extra": "^4.0.5",
+        "@types/mocha": "^5.2.7",
+        "@types/node": "^8.0.57",
+        "babel-plugin-macros": "^2.8.0",
+        "fs-extra": "^4.0.3",
+        "mocha": "^6.2.0",
+        "ts-interface-checker": "^0.1.12",
+        "ts-node": "^4.0.1",
+        "@types/glob": "^7.1.3"
+    }
 }
