@@ -45,7 +45,8 @@
   "dependencies": {
     "commander": "^2.12.2",
     "fs-extra": "^4.0.3",
-    "typescript": "^3.0.0"
+    "typescript": "^3.0.0",
+    "glob": "^7.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.10.5",
@@ -57,6 +58,7 @@
     "fs-extra": "^4.0.3",
     "mocha": "^6.2.0",
     "ts-interface-checker": "^0.1.12",
-    "ts-node": "^4.0.1"
+    "ts-node": "^4.0.1",
+    "@types/glob": "^7.1.3"
   }
 }

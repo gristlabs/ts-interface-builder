@@ -327,23 +327,43 @@ export function main() {
     return;
   }
 
-  for (const filePath of files) {
-    // Read and parse the source file.
-    const ext = path.extname(filePath);
-    const dir = outDir || path.dirname(filePath);
-    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + (options.format === "ts" ? ".ts" : ".js"));
-
-    if (changedOnly && !needsUpdate(filePath, outPath)) {
-      if (verbose) {
-        console.log(`Skipping ${filePath} because ${outPath} is newer`);
-      }
-      continue;
-    }
-
+  if (
+    files.length === 1
+    && files[0].match(/\*/)
+  ) {
     if (verbose) {
-      console.log(`Compiling ${filePath} -> ${outPath}`);
+      console.log(`Globbing ${files[0]}`);
     }
-    const generatedCode = defaultHeader + Compiler.compile(filePath, options);
-    fs.writeFileSync(outPath, generatedCode);
+    var glob = require("glob")
+    glob(files[0], function (error: any, globFiles: string[]) {
+      if (error) {
+        console.error(error);
+        process.exit(1);
+        return;
+      }
+      for (const filePath of globFiles) {
+        // Read and parse the source file.
+        const ext = path.extname(filePath);
+        const dir = outDir || path.dirname(filePath);
+        const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
+        if (verbose) {
+          console.log(`Compiling ${filePath} -> ${outPath}`);
+        }
+        const generatedCode = defaultHeader + Compiler.compile(filePath, options);
+        fs.writeFileSync(outPath, generatedCode);
+      }
+    });
+  } else {
+    for (const filePath of files) {
+      // Read and parse the source file.
+      const ext = path.extname(filePath);
+      const dir = outDir || path.dirname(filePath);
+      const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
+      if (verbose) {
+        console.log(`Compiling ${filePath} -> ${outPath}`);
+      }
+      const generatedCode = defaultHeader + Compiler.compile(filePath, options);
+      fs.writeFileSync(outPath, generatedCode);
+    }
   }
 }
