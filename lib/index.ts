@@ -4,6 +4,7 @@ import * as commander from "commander";
 import * as fs from "fs";
 import * as path from "path";
 import * as ts from "typescript";
+var glob = require("glob");
 
 // Default format to use for `format` option
 const defaultFormat = "ts"
@@ -327,43 +328,26 @@ export function main() {
     return;
   }
 
-  if (
-    files.length === 1
-    && files[0].match(/\*/)
-  ) {
-    if (verbose) {
-      console.log(`Globbing ${files[0]}`);
-    }
-    var glob = require("glob")
-    glob(files[0], function (error: any, globFiles: string[]) {
-      if (error) {
-        console.error(error);
-        process.exit(1);
-        return;
-      }
-      for (const filePath of globFiles) {
-        // Read and parse the source file.
-        const ext = path.extname(filePath);
-        const dir = outDir || path.dirname(filePath);
-        const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
-        if (verbose) {
-          console.log(`Compiling ${filePath} -> ${outPath}`);
-        }
-        const generatedCode = defaultHeader + Compiler.compile(filePath, options);
-        fs.writeFileSync(outPath, generatedCode);
-      }
-    });
-  } else {
-    for (const filePath of files) {
-      // Read and parse the source file.
-      const ext = path.extname(filePath);
-      const dir = outDir || path.dirname(filePath);
-      const outPath = path.join(dir, path.basename(filePath, ext) + suffix + ".ts");
+  // perform expansion and find all matching files ourselves
+  const globFiles = [].concat(...files.map(p => glob.sync(p)));
+
+  for (const filePath of globFiles) {
+    // Read and parse the source file.
+    const ext = path.extname(filePath);
+    const dir = outDir || path.dirname(filePath);
+    const outPath = path.join(dir, path.basename(filePath, ext) + suffix + (options.format === "ts" ? ".ts" : ".js"));
+
+    if (changedOnly && !needsUpdate(filePath, outPath)) {
       if (verbose) {
-        console.log(`Compiling ${filePath} -> ${outPath}`);
+        console.log(`Skipping ${filePath} because ${outPath} is newer`);
       }
-      const generatedCode = defaultHeader + Compiler.compile(filePath, options);
-      fs.writeFileSync(outPath, generatedCode);
+      continue;
     }
+
+    if (verbose) {
+      console.log(`Compiling ${filePath} -> ${outPath}`);
+    }
+    const generatedCode = defaultHeader + Compiler.compile(filePath, options);
+    fs.writeFileSync(outPath, generatedCode);
   }
 }
