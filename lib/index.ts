@@ -2,9 +2,9 @@
 
 import * as commander from "commander";
 import * as fs from "fs";
+import { sync } from "glob";
 import * as path from "path";
 import * as ts from "typescript";
-var glob = require("glob");
 
 // Default format to use for `format` option
 const defaultFormat = "ts"
@@ -329,7 +329,8 @@ export function main() {
   }
 
   // perform expansion and find all matching files ourselves
-  const globFiles = [].concat(...files.map(p => glob.sync(p)));
+  let blank:string[] = []
+  const globFiles = blank.concat(...files.map(p => sync(p)));
 
   for (const filePath of globFiles) {
     // Read and parse the source file.
