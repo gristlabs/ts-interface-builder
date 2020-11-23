@@ -2,6 +2,7 @@
 
 import * as commander from "commander";
 import * as fs from "fs";
+import { sync } from "glob";
 import * as path from "path";
 import * as ts from "typescript";
 
@@ -327,7 +328,11 @@ export function main() {
     return;
   }
 
-  for (const filePath of files) {
+  // perform expansion and find all matching files ourselves
+  let blank:string[] = []
+  const globFiles = blank.concat(...files.map(p => sync(p)));
+
+  for (const filePath of globFiles) {
     // Read and parse the source file.
     const ext = path.extname(filePath);
     const dir = outDir || path.dirname(filePath);
