@@ -253,12 +253,14 @@ export class Compiler {
       "export default exportedTypeSuite;\n";
   }
   private _compileIndexSignatureDeclaration(node: ts.IndexSignatureDeclaration): string {
+    // This option is supported for backward compatibility.
     if (this.options.ignoreIndexSignature) {
       return ignoreNode;
     }
 
-    throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
-      node.getText());
+    if (!node.type) { throw new Error(`Node ${ts.SyntaxKind[node.kind]} must have a type`); }
+    const type = this.compileNode(node.type);
+    return `[t.indexKey]: ${type}`;
   }
   private _formatExport(name: string, expression: string): string {
     return this.options.format === "js:cjs"
