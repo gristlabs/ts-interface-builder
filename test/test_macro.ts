@@ -59,10 +59,12 @@ describe("ts-interface-builder/macro", () => {
     this.timeout(5000);
     const file = join(fixtures, "macro-error-compiling.ts");
     const tsOutput = tsCompile(await readFile(file, { encoding: "utf8" }));
-    const errorCompilingFile = join(fixtures, "ignore-index-signature.ts");
+    const errorCompilingFile = join(fixtures, "ignore-generics.ts");
     assert.throws(() => babelCompile(tsOutput, file), {
       name: "MacroError",
-      message: `${file}: ts-interface-builder/macro: Error compiling file ${errorCompilingFile} with options {"inlineImports":true,"format":"js:cjs"}: Error: Node IndexSignature not supported by ts-interface-builder: [extra: string]: any;`,
+      message: `${file}: ts-interface-builder/macro: ` +
+        `Error compiling file ${errorCompilingFile} with options {"inlineImports":true,"format":"js:cjs"}: ` +
+        `Error: Generics are not yet supported by ts-interface-builder: IMyType<string>`,
     } as any);
   });
 });

@@ -25,7 +25,13 @@ describe("ts-interface-builder", () => {
     assert.deepEqual(output, expected);
   });
 
-  it("should ignore index signature", async () => {
+  it("should support index signature", async () => {
+    const output = await Compiler.compile(join(fixtures, "index-signature.ts"));
+    const expected = await readFile(join(fixtures, "index-signature-ti.ts"), {encoding: "utf8"});
+    assert.deepEqual(output, expected);
+  });
+
+  it("should ignore index signature if requested", async () => {
     const output = await Compiler.compile(join(fixtures, "ignore-index-signature.ts"),
       {ignoreIndexSignature: true});
     const expected = await readFile(join(fixtures, "ignore-index-signature-ti.ts"), {encoding: "utf8"});
