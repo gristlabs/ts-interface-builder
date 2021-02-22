@@ -48,8 +48,8 @@ const macroHandler: MacroHandler = (params) => {
 
   // Begin mutations
 
-  programPath.scope.rename(tsInterfaceCheckerIdentifier);
-  programPath.scope.rename(onceIdentifier);
+  programPath?.scope.rename(tsInterfaceCheckerIdentifier);
+  programPath?.scope.rename(onceIdentifier);
   toReplace.forEach(({ callPath, id }) => {
     scopeRenameRecursive(callPath.scope, id);
   });
@@ -127,7 +127,7 @@ const macroHandler: MacroHandler = (params) => {
   }
 
   function prependProgramStatement(statement: types.Statement) {
-    (programPath.get("body.0") as NodePath).insertBefore(statement);
+    (programPath?.get("body.0") as NodePath).insertBefore(statement);
   }
 };
 
