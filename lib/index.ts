@@ -65,6 +65,7 @@ export class Compiler {
       case ts.SyntaxKind.TypeLiteral: return this._compileTypeLiteralNode(node as ts.TypeLiteralNode);
       case ts.SyntaxKind.ArrayType: return this._compileArrayTypeNode(node as ts.ArrayTypeNode);
       case ts.SyntaxKind.TupleType: return this._compileTupleTypeNode(node as ts.TupleTypeNode);
+      case ts.SyntaxKind.RestType: return this._compileRestTypeNode(node as ts.RestTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
       case ts.SyntaxKind.IntersectionType: return this._compileIntersectionTypeNode(node as ts.IntersectionTypeNode);
       case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
@@ -91,6 +92,7 @@ export class Compiler {
       case ts.SyntaxKind.ThisKeyword: return '"this"';
       case ts.SyntaxKind.VoidKeyword: return '"void"';
       case ts.SyntaxKind.UndefinedKeyword: return '"undefined"';
+      case ts.SyntaxKind.UnknownKeyword: return '"unknown"';
       case ts.SyntaxKind.NullKeyword: return '"null"';
       case ts.SyntaxKind.NeverKeyword: return '"never"';
       case ts.SyntaxKind.IndexSignature:
@@ -164,6 +166,12 @@ export class Compiler {
   private _compileTupleTypeNode(node: ts.TupleTypeNode): string {
     const members = node.elementTypes.map(this.compileNode, this);
     return `t.tuple(${members.join(", ")})`;
+  }
+  private _compileRestTypeNode(node: ts.RestTypeNode): string {
+    if (node.parent.kind != ts.SyntaxKind.TupleType) {
+      throw new Error("Rest type currently only supported in tuples");
+    }
+    return `t.rest(${this.compileNode(node.type)})`;
   }
   private _compileUnionTypeNode(node: ts.UnionTypeNode): string {
     const members = node.types.map(this.compileNode, this);
