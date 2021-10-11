@@ -1,3 +1,6 @@
+## v0.3.1 (2021-10-11)
+- Add support for rest types in tuples, and for the type `unknown`.
+
 ## v0.3.0 (2021-02-21)
 - Adds support for index signatures.
 
