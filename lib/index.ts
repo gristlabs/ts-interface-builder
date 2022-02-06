@@ -95,6 +95,7 @@ export class Compiler {
       case ts.SyntaxKind.UnknownKeyword: return '"unknown"';
       case ts.SyntaxKind.NullKeyword: return '"null"';
       case ts.SyntaxKind.NeverKeyword: return '"never"';
+      case ts.SyntaxKind.BigIntKeyword: return '"bigint"';
       case ts.SyntaxKind.IndexSignature:
         return this._compileIndexSignatureDeclaration(node as ts.IndexSignatureDeclaration);
     }
