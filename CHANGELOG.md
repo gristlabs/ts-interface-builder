@@ -1,3 +1,6 @@
+## v0.3.3 (2022-02-06)
+- Add support for `bigint` type.
+
 ## v0.3.1 (2021-10-11)
 - Add support for rest types in tuples, and for the type `unknown`.
 
