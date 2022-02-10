@@ -21,6 +21,7 @@ const ignoreNode = "";
 export interface ICompilerOptions {
   format?: "ts" | "js:esm" | "js:cjs"
   ignoreGenerics?: boolean;
+  ignoreNotSupported?: boolean;
   ignoreIndexSignature?: boolean;
   inlineImports?: boolean;
 }
@@ -38,7 +39,7 @@ export class Compiler {
     if (!topNode) {
       throw new Error(`Can't process ${filePath}: ${collectDiagnostics(program)}`);
     }
-    options = {format: defaultFormat, ignoreGenerics: false, ignoreIndexSignature: false, inlineImports: false, ...options}
+    options = {format: defaultFormat, ignoreGenerics: false, ignoreNotSupported: false, ignoreIndexSignature: false, inlineImports: false, ...options}
     return new Compiler(checker, options, topNode).compileNode(topNode);
   }
 
@@ -82,6 +83,8 @@ export class Compiler {
       case ts.SyntaxKind.ExportDeclaration:
       case ts.SyntaxKind.ImportDeclaration:
         return this._compileImportDeclaration(node as ts.ImportDeclaration);
+      case ts.SyntaxKind.ModuleDeclaration:
+        return this._compileNamespaceDeclaration(node as ts.NamespaceDeclaration);
       case ts.SyntaxKind.SourceFile: return this._compileSourceFile(node as ts.SourceFile);
       case ts.SyntaxKind.AnyKeyword: return '"any"';
       case ts.SyntaxKind.NumberKeyword: return '"number"';
@@ -101,6 +104,12 @@ export class Compiler {
     }
     // Skip top-level statements that we haven't handled.
     if (ts.isSourceFile(node.parent!)) { return ""; }
+    
+    if (this.options.ignoreNotSupported) {
+      console.log(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
+        node.getText());
+      return node.getText();
+    }
     throw new Error(`Node ${ts.SyntaxKind[node.kind]} not supported by ts-interface-builder: ` +
       node.getText());
   }
@@ -143,6 +152,8 @@ export class Compiler {
       return this.compileNode(node.typeArguments[0]);
     } else if (node.typeName.getText() === "Array") {
       return `t.array(${this.compileNode(node.typeArguments[0])})`;
+    } else if (node.typeName.getText() === "Record") {
+      return '"object"';
     } else if (this.options.ignoreGenerics) {
       return '"any"';
     } else {
@@ -190,8 +201,16 @@ export class Compiler {
   }
   private _compileEnumDeclaration(node: ts.EnumDeclaration): string {
     const name = this.getName(node.name);
-    const members: string[] = node.members.map(m =>
-      `  "${this.getName(m.name)}": ${getTextOfConstantValue(this.checker.getConstantValue(m))},\n`);
+    let counter = 0;
+    const members: string[] = node.members.map(m => {
+      let value = getTextOfConstantValue(this.checker.getConstantValue(m));
+      //for some strange reason enum members inside namespaces are undefined
+      if (value === "undefined") {
+        value = counter.toString(10);
+        ++counter;
+      }
+      return `  "${this.getName(m.name)}": ${value},\n`
+    });
     this.exportedNames.push(name);
     return this._formatExport(name, `t.enumtype({\n${members.join("")}})`);
   }
@@ -224,6 +243,13 @@ export class Compiler {
   private _compileParenthesizedTypeNode(node: ts.ParenthesizedTypeNode): string {
     return this.compileNode(node.type);
   }
+  private _compileNamespaceDeclaration(node: ts.NamespaceDeclaration): string {
+    if ("statements" in node.body) {
+      return node.body.statements.map(this.compileNode, this).filter(s => s).join("\n\n");
+    }
+    console.log("Namespace or module can`t be parsed:", node.getText());
+    return "";
+  }
   private _compileImportDeclaration(node: ts.ImportDeclaration): string {
     if (this.options.inlineImports) {
       const importedSym = this.checker.getSymbolAtLocation(node.moduleSpecifier);
@@ -236,26 +262,26 @@ export class Compiler {
     }
     return '';
   }
-  private _compileSourceFileStatements(node: ts.SourceFile): string {
-    return node.statements.map(this.compileNode, this).filter((s) => s).join("\n\n");
+  private _compileSourceFileStatements(statements: ts.NodeArray<ts.Statement>): string {
+    return statements.map(this.compileNode, this).filter((s) => s).join("\n\n");
   }
   private _compileSourceFile(node: ts.SourceFile): string {
     // for imported source files, skip the wrapper
     if (node !== this.topNode) {
-      return this._compileSourceFileStatements(node);
+      return this._compileSourceFileStatements(node.statements);
     }
     // wrap the top node with a default export
     if (this.options.format === "js:cjs") {
       return `const t = require("ts-interface-checker");\n\n` +
         "module.exports = {\n" +
-        this._compileSourceFileStatements(node) + "\n" +
+        this._compileSourceFileStatements(node.statements) + "\n" +
         "};\n"
     }
     const prefix = `import * as t from "ts-interface-checker";\n` +
                    (this.options.format === "ts" ? "// tslint:disable:object-literal-key-quotes\n" : "") +
                    "\n";
     return prefix +
-      this._compileSourceFileStatements(node) + "\n\n" +
+      this._compileSourceFileStatements(node.statements) + "\n\n" +
       "const exportedTypeSuite" + (this.options.format === "ts" ? ": t.ITypeSuite" : "") + " = {\n" +
       this.exportedNames.map((n) => `  ${n},\n`).join("") +
       "};\n" +
@@ -314,6 +340,7 @@ export function main() {
   .option("--format <format>", `Format to use for output; options are 'ts' (default), 'js:esm', 'js:cjs'`)
   .option("-g, --ignore-generics", `Ignores generics`)
   .option("-i, --ignore-index-signature", `Ignores index signature`)
+  .option("--ignore-not-supported", `Skip all not supported code`)
   .option("--inline-imports", `Traverses the full import tree and inlines all types into output`)
   .option("-s, --suffix <suffix>", `Suffix to append to generated files (default ${defaultSuffix})`, defaultSuffix)
   .option("-o, --outDir <path>", `Directory for output files; same as source file if omitted`)
@@ -329,6 +356,7 @@ export function main() {
   const options: ICompilerOptions = {
     format: commander.format || defaultFormat,
     ignoreGenerics: commander.ignoreGenerics,
+    ignoreNotSupported: commander.ignoreNotSupported,
     ignoreIndexSignature: commander.ignoreIndexSignature,
     inlineImports: commander.inlineImports,
   };
