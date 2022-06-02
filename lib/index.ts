@@ -68,7 +68,12 @@ export class Compiler {
       case ts.SyntaxKind.RestType: return this._compileRestTypeNode(node as ts.RestTypeNode);
       case ts.SyntaxKind.UnionType: return this._compileUnionTypeNode(node as ts.UnionTypeNode);
       case ts.SyntaxKind.IntersectionType: return this._compileIntersectionTypeNode(node as ts.IntersectionTypeNode);
-      case ts.SyntaxKind.LiteralType: return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
+      case ts.SyntaxKind.LiteralType:
+        let tnode = node as ts.LiteralTypeNode
+        if (tnode.literal.kind === ts.SyntaxKind.NullKeyword) {
+          return '"null"'
+        }
+        return this._compileLiteralTypeNode(node as ts.LiteralTypeNode);
       case ts.SyntaxKind.OptionalType: return this._compileOptionalTypeNode(node as ts.OptionalTypeNode);
       case ts.SyntaxKind.EnumDeclaration: return this._compileEnumDeclaration(node as ts.EnumDeclaration);
       case ts.SyntaxKind.InterfaceDeclaration:
@@ -165,7 +170,7 @@ export class Compiler {
     return `t.array(${this.compileNode(node.elementType)})`;
   }
   private _compileTupleTypeNode(node: ts.TupleTypeNode): string {
-    const members = node.elementTypes.map(this.compileNode, this);
+    const members = node.elements.map(this.compileNode, this);
     return `t.tuple(${members.join(", ")})`;
   }
   private _compileRestTypeNode(node: ts.RestTypeNode): string {
