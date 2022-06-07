@@ -12,6 +12,7 @@
     "watch": "tsc -w",
     "test-only": "mocha 'test/*.ts'",
     "test": "npm run build && npm run test-only",
+    "prepare": "tsc",
     "prepack": "npm run test"
   },
   "keywords": [
