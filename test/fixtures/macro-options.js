@@ -39,6 +39,6 @@ var checkerSuite1 = once(function () {
 });
 // Note: default options defined in babel plugin options in ../test_macro.ts
 var dir = ".";
-var file = dir + "/imports-parent.ts";
+var file = "".concat(dir, "/imports-parent.ts");
 export var checkersUsingDefaultOptions = checkerSuite0();
 export var checkersWithInlineOptions = checkerSuite1();

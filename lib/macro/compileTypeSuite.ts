@@ -10,7 +10,7 @@ export function compileTypeSuite(args: ICompilerArgs): string {
   const context = `compiling file ${file} with options ${optionsString}`;
   try {
     compiled = Compiler.compile(file, options);
-  } catch (error) {
+  } catch (error : any) {
     throw macroError(`Error ${context}: ${error.name}: ${error.message}`);
   }
   /*
