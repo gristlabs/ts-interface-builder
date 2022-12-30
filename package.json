@@ -57,7 +57,7 @@
     "@types/node": "^8.10.66",
     "babel-plugin-macros": "^2.8.0",
     "fs-extra": "^4.0.3",
-    "mocha": "^6.2.0",
+    "mocha": "^10.2.0",
     "ts-interface-checker": "^1.0.0",
     "ts-node": "^4.0.1"
   }
